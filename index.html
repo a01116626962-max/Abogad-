@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>موقعك مع التخزين الديناميكي</title>
+    <title>موقعك مع التخزين الديناميكي (جاهز)</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 40px;
             background-color: #f4f4f4;
             color: #333;
-            text-align: right; /* لمحاذاة النص بشكل صحيح في RTL */
+            text-align: right;
         }
         .container {
             max-width: 600px;
@@ -64,7 +64,7 @@
 
 <div class="container">
     <h1>نموذج إرسال الرسائل (مدعوم من Firebase)</h1>
-    <p>هذا النموذج يسمح لأي زائر بإرسال بيانات ليتم حفظها مباشرة في قاعدة بيانات Firestore الخاصة بك.</p>
+    <p>سيتم حفظ الرسالة في قاعدة بيانات Firestore بمجرد الضغط على زر الإرسال.</p>
     
     <form id="contactForm">
         <label for="name">الاسم:</label>
@@ -84,7 +84,7 @@
 
 <script>
     // ----------------------------------------------------
-    // مفاتيح Firebase الخاصة بمشروعك العامل (rdtt-15cbe)
+    // مفاتيح Firebase الخاصة بمشروعك rdtt-15cbe
     // ----------------------------------------------------
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
@@ -113,8 +113,8 @@
         const name = document.getElementById('name').value;
         const message = document.getElementById('message').value;
 
-        // دالة حفظ البيانات في Firestore في مجموعة "رسائل_الزوار"
-        db.collection("رسائل_الزوار").add({
+        // ⚠️ مهم: الآن يتم الحفظ في مجموعة "user_messages" (بالإنجليزية)
+        db.collection("user_messages").add({
             الاسم: name,
             الرسالة: message,
             التاريخ: firebase.firestore.FieldValue.serverTimestamp()
@@ -122,7 +122,7 @@
         .then(() => {
             statusDiv.style.backgroundColor = '#d4edda';
             statusDiv.style.color = '#155724';
-            statusDiv.textContent = "✅ تم حفظ الرسالة بنجاح! يمكنك الآن التحقق من Firestore.";
+            statusDiv.textContent = "✅ تم حفظ الرسالة بنجاح!";
             form.reset(); // تفريغ النموذج
         })
         .catch((error) => {
