@@ -13,8 +13,8 @@
             margin: 0;
             padding: 20px;
             text-align: right;
+            direction: rtl; /* لضمان الاتجاه الصحيح */
         }
-
         .container {
             max-width: 900px;
             margin: 0 auto;
@@ -23,14 +23,15 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-
         h1, h2 {
             color: #007bff;
             border-bottom: 2px solid #eee;
             padding-bottom: 10px;
             margin-top: 20px;
         }
-
+        .action-buttons {
+            margin-bottom: 20px;
+        }
         button {
             padding: 10px 15px;
             color: white;
@@ -41,55 +42,45 @@
             transition: background-color 0.3s;
             background-color: #007bff; /* زر التحديث */
         }
-
         button:hover {
             opacity: 0.9;
         }
-        
         /* أزرار الأيام */
         .day-buttons button {
             background-color: #6c757d;
             margin: 5px;
             font-weight: bold;
         }
-
         .day-buttons button.active {
-            background-color: #007bff;
+            background-color: #28a745; /* أخضر للدلالة على اليوم المختار */
         }
-
         /* جداول الأيام */
         .day-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
         }
-
         .day-table th, .day-table td {
             border: 1px solid #ddd;
             padding: 10px;
             text-align: right;
         }
-
         .day-table th {
             background-color: #f2f2f2;
             color: #333;
         }
-
         .status-absent {
             color: #dc3545; 
             font-weight: bold;
         }
-
         .status-present {
             color: #28a745; 
             font-weight: bold;
         }
-
         .status-default-muted {
             color: #999; 
             font-style: italic;
         }
-        
         /* الزر الثابت */
         #static-whatsapp-button {
             display: block;
@@ -99,7 +90,6 @@
             background-color: #075E54; 
             font-size: 1.1em;
         }
-        
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
@@ -115,7 +105,7 @@
 
     <div class="action-buttons">
         <button onclick="fetchAttendanceData()">تحديث الجدول من قاعدة البيانات</button>
-        </div>
+    </div>
 
     <hr>
 
@@ -140,7 +130,7 @@
 </div>
 
 <script>
-    // ⚠️ مفاتيح Firebase الخاصة بمشروعك العامل (rdtt-15cbe)
+    // ⚠️ مفاتيح Firebase الخاصة بمشروعك العامل (rdtt-15cbe) - نفس المفاتيح
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
         authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -155,30 +145,59 @@
     const db = firebase.firestore();
     
     // ----------------------------------------------------------------
-    // 1. الإعدادات الثابتة
+    // 1. الإعدادات الثابتة والمجدولة (المحدثة)
     // ----------------------------------------------------------------
     const MANAGER_PHONE_NUMBER = '201005525050'; 
     const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
     const ALL_WORKING_DAYS = WORKING_DAYS; 
 
+    // 🌟🌟 جدول المتطوعين الجديد 🌟🌟
     const FIXED_VOLUNTEERS = {
-        "أحمد": ALL_WORKING_DAYS, 
-        "هدير": ALL_WORKING_DAYS, 
-        "محمد إبراهيم": ALL_WORKING_DAYS, 
-        "محمد عبدالحميد": ["الأحد", "الخميس"],
-        "سامى": ["الإثنين", "الثلاثاء", "الأربعاء", "الخميس"], 
-        "ممتاز": ["السبت", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"], 
-        "حبيبه": ALL_WORKING_DAYS, 
-        "ساندى": ["الثلاثاء", "الخميس"],
-        "رحاب": ["السبت", "الأربعاء"],
-        "معاذ": ["الأحد", "الثلاثاء"], 
-        "مازن": ["الأحد", "الإثنين"],
-        "يوسف": ALL_WORKING_DAYS, 
-        "إبراهيم": ALL_WORKING_DAYS, 
+        // 1. يوسف: طول الاسبوع معدا الثلاثاء و الاربع
+        "يوسف": ALL_WORKING_DAYS.filter(day => day !== "الثلاثاء" && day !== "الأربعاء"),
+        
+        // 2. عبدالرحمن: كل الأسبوع ماعدا اتنين وخميس
+        "عبدالرحمن": ALL_WORKING_DAYS.filter(day => day !== "الإثنين" && day !== "الخميس"),
+        
+        // 3. رحاب: سبت - اتنين - تلات
+        "رحاب": ["السبت", "الإثنين", "الثلاثاء"],
+        
+        // 4. معاذ: احد / تلات / خميس 
+        "معاذ": ["الأحد", "الثلاثاء", "الخميس"],
+        
+        // 5. مروان: طول الاسبوع 
         "مروان": ALL_WORKING_DAYS,
-        "عبدالرحمن": ALL_WORKING_DAYS, 
+        
+        // 6. ساندي: سبت - حد - اربع
+        "ساندي": ["السبت", "الأحد", "الأربعاء"],
+        
+        // 7. أحمد: طول الاسبوع ما عدا الثلاثاء والاربع
+        "أحمد": ALL_WORKING_DAYS.filter(day => day !== "الثلاثاء" && day !== "الأربعاء"),
+        
+        // 8. ممتاز: طول الاسبوع 
+        "ممتاز": ALL_WORKING_DAYS,
+        
+        // 9. حبيبة: طول الاسبوع
+        "حبيبة": ALL_WORKING_DAYS,
+        
+        // 10. إبراهيم: طول الاسبوع
+        "إبراهيم": ALL_WORKING_DAYS,
+        
+        // 11. سامي: سبت / حد / تلات
+        "سامي": ["السبت", "الأحد", "الثلاثاء"],
+        
+        // 12. محمد عبد الحميد: طول الاسبوع م عاد الاحد
+        "محمد عبدالحميد": ALL_WORKING_DAYS.filter(day => day !== "الأحد"),
+        
+        // 13. هدير: طول الاسبوع
+        "هدير": ALL_WORKING_DAYS,
+        
+        // 14. محمد إبراهيم: طول الاسبوع
+        "محمد إبراهيم": ALL_WORKING_DAYS
     };
-
+    // 🌟🌟 نهاية جدول المتطوعين الجديد 🌟🌟
+    
+    // تأكد من أن الأسماء المرتبة تعكس الأسماء الجديدة في الجدول
     const VOLUNTEER_NAMES_ORDERED = Object.keys(FIXED_VOLUNTEERS);
     
     let currentAttendanceData = {}; 
@@ -196,6 +215,7 @@
         currentAttendanceData = {}; 
 
         try {
+            // جلب البيانات من مجموعة user_attendance
             const snapshot = await db.collection("user_attendance").get();
 
             snapshot.forEach(doc => {
@@ -218,6 +238,7 @@
             resultArea.innerHTML = `<p class="status-present">✅ **تم تحديث الجدول بنجاح.** (تم جلب ${snapshot.docs.length} سجل)</p>`;
             
             if(selectedDay) {
+                // إعادة عرض اليوم المختار بعد التحديث
                 viewDay(selectedDay); 
             }
 
@@ -260,7 +281,8 @@
             let displayStatus;
             let statusClass;
             let reason = '';
-
+            
+            // تحديد الحالة النهائية
             if (recordedStatus) {
                 reason = recordedStatus.status === 'اعتذار' ? recordedStatus.reason : '';
                 const timeDisplay = recordedStatus.registrationTime ? ` (سُجّل: ${recordedStatus.registrationTime.split(' – ')[1]})` : '';
@@ -269,7 +291,7 @@
                     displayStatus = `❌ اعتذار طارئ${timeDisplay}`;
                     statusClass = 'status-absent';
                 } else { 
-                    displayStatus = `✅ حضور مؤكد${timeDisplay}`;
+                    displayStatus = `✅ حضور مؤكد (تم التسجيل)${timeDisplay}`;
                     statusClass = 'status-present';
                 }
             } else {
@@ -282,6 +304,7 @@
                 }
             }
             
+            // تحديد من هو الحاضر فعلياً
             const isAttending = (isFixed || (recordedStatus && recordedStatus.status === 'حضور')) && 
                                 (!recordedStatus || recordedStatus.status !== 'اعتذار');
 
@@ -344,7 +367,7 @@
         const message = `
 📌 *قائمة الحضور اليومية*
 🗓️ *اليوم والتاريخ:* ${day} - ${dateString}
-⏱️ *وقت التسجيل:* ${timeString}
+⏱️ *وقت الإرسال:* ${timeString}
 👥 *إجمالي الحضور:* ${attendanceList.length} متطوع
 
 ---
@@ -353,7 +376,7 @@ ${listText}
 `;
         
         const encodedMessage = encodeURIComponent(message.trim());
-        const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+        const whatsappUrl = `https://wa.me/${MANAGER_PHONE_NUMBER}?text=${encodedMessage}`;
         
         const sendButton = document.getElementById('static-whatsapp-button');
         sendButton.textContent = '✅ جاري فتح الواتساب...';
