@@ -2,10 +2,111 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>موقعي المجاني الجديد</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نموذج تخزين Firebase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #5cb85c;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+    </style>
 </head>
 <body>
-    <h1>مرحباً بالعالم!</h1>
-    <p>لقد أنشأت أول صفحة لي على GitHub Pages.</p>
+
+<div class="container">
+    <h1>أرسل رسالة وقم بتخزينها!</h1>
+    <p>سيتم حفظ هذه الرسالة مباشرة في قاعدة بيانات Firebase (Firestore).</p>
+    
+    <form id="contactForm">
+        <label for="name">الاسم:</label>
+        <input type="text" id="name" required>
+
+        <label for="message">الرسالة:</label>
+        <textarea id="message" rows="4" required></textarea>
+
+        <button type="submit">إرسال وحفظ البيانات</button>
+    </form>
+
+    <div id="statusMessage" style="margin-top: 15px; font-weight: bold;"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+<script>
+    // ----------------------------------------------------
+    // مفاتيح Firebase الخاصة بك (تم إدراجها هنا)
+    // ----------------------------------------------------
+    const firebaseConfig = {
+        apiKey: "AIzaSyBAPZvA8jXABF1PRuaxQE95hmh5Gy_y0Xs",
+        authDomain: "volunteers-43d21.firebaseapp.com",
+        databaseURL: "https://volunteers-43d21-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "volunteers-43d21",
+        storageBucket: "volunteers-43d21.firebasestorage.app",
+        messagingSenderId: "320874610236",
+        appId: "1:320874610236:web:443106dfcace107a364d39"
+    };
+
+    // تهيئة Firebase
+    firebase.initializeApp(firebaseConfig);
+
+    // الوصول إلى قاعدة البيانات Firestore (الأكثر شيوعًا للمواقع الحديثة)
+    const db = firebase.firestore();
+
+    const form = document.getElementById('contactForm');
+    const statusDiv = document.getElementById('statusMessage');
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault(); // منع الإرسال التقليدي للصفحة
+        statusDiv.textContent = "جاري الحفظ...";
+
+        const name = document.getElementById('name').value;
+        const message = document.getElementById('message').value;
+
+        // دالة حفظ البيانات في Firestore
+        db.collection("رسائل_الزوار").add({
+            الاسم: name,
+            الرسالة: message,
+            التاريخ: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => {
+            statusDiv.textContent = "تم حفظ الرسالة بنجاح! تحقق من Firebase.";
+            form.reset(); // تفريغ النموذج
+        })
+        .catch((error) => {
+            statusDiv.textContent = "حدث خطأ: " + error.message;
+            console.error("خطأ في الحفظ: ", error);
+        });
+    });
+</script>
+
 </body>
 </html>
