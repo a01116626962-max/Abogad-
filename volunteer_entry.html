@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <title>تسجيل حضور المتطوعين</title>
+</head>
+<body>
+    <div class="container">
+        <h2>تسجيل حضور المتطوعين</h2>
+        <form id="attendanceForm">
+            <button type="submit" class="submit-btn">تسجيل وإرسال للواتساب</button>
+        </form>
+        <div id="status-message"></div>
+        <div id="whatsapp-link">
+            <a href="#" id="wa-button" target="_blank">إرسال بيانات التسجيل عبر واتساب</a>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <script>
+        // ⚠️ مفاتيح Firebase الخاصة بمشروعك العامل (rdtt-15cbe)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+            authDomain: "rdtt-15cbe.firebaseapp.com",
+            projectId: "rdtt-15cbe",
+            storageBucket: "rdtt-15cbe.firebasestorage.app",
+            messagingSenderId: "219502671343",
+            appId: "1:219502671343:web:b289b11869e25c9a30321a"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const statusDiv = document.getElementById('status-message');
+        const whatsappNumber = "201223314173"; 
+        
+        // ... (دوال getCurrentDateTime و toggleReasonField هنا) ...
+
+        document.getElementById('attendanceForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            // ... (الحصول على البيانات) ...
+            
+            // ----------------------------------------------------------------
+            // 1. الحفظ في Firebase (في مجموعة user_attendance)
+            // ----------------------------------------------------------------
+            // ... (كود الحفظ لكل يوم مختار هنا) ...
+            
+            // ----------------------------------------------------------------
+            // 2. إعداد رسالة الواتساب
+            // ----------------------------------------------------------------
+            // ... (كود إعداد رسالة الواتساب هنا) ...
+            
+        });
+        
+        // ... (باقي كود الجافاسكريبت هنا) ...
+    </script>
+</body>
+</html>
