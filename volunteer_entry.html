@@ -1,24 +1,151 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل حضور المتطوعين</title>
+    
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            text-align: right;
+            direction: rtl;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        .days-container {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .day-checkbox {
+            display: inline-block;
+            margin-left: 20px;
+            margin-bottom: 10px;
+            font-weight: normal;
+        }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #28a745; /* أخضر للإرسال */
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background-color 0.3s;
+        }
+        .submit-btn:hover {
+            background-color: #1e7e34;
+        }
+        #status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        #whatsapp-link a {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        #whatsapp-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
+
     <div class="container">
         <h2>تسجيل حضور المتطوعين</h2>
+
         <form id="attendanceForm">
+            
+            <label for="volunteerName">الاسم:</label>
+            <select id="volunteerName" required>
+                <option value="">اختر اسمك...</option>
+                </select>
+
+            <label>الأيام التي ستأتي فيها (يمكن اختيار يوم أو أكثر):</label>
+            <div id="daysCheckboxes" class="days-container">
+                </div>
+
+            <label for="status">الحالة:</label>
+            <select id="status" required onchange="toggleReasonField()">
+                <option value="حضور">تسجيل حضور</option>
+                <option value="اعتذار">اعتذار طارئ</option>
+            </select>
+            
+            <div id="reasonField" style="display:none;">
+                <label for="reason">سبب الاعتذار (مهم):</label>
+                <textarea id="reason" rows="3" placeholder="اذكر سبب اعتذارك بالتفصيل..."></textarea>
+            </div>
+
             <button type="submit" class="submit-btn">تسجيل وإرسال للواتساب</button>
         </form>
+
         <div id="status-message"></div>
-        <div id="whatsapp-link">
-            <a href="#" id="wa-button" target="_blank">إرسال بيانات التسجيل عبر واتساب</a>
+        <div id="whatsapp-link" style="display:none;">
+            <a href="#" id="wa-button" target="_blank">انقر هنا لإرسال البيانات عبر واتساب</a>
         </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script>
-        // ⚠️ مفاتيح Firebase الخاصة بمشروعك العامل (rdtt-15cbe)
+        // ----------------------------------------------------------------
+        // 1. إعدادات Firebase
+        // ----------------------------------------------------------------
+        // ⚠️ يجب استخدام مفاتيح مشروعك (rdtt-15cbe)
         const firebaseConfig = {
             apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
             authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -27,30 +154,203 @@
             messagingSenderId: "219502671343",
             appId: "1:219502671343:web:b289b11869e25c9a30321a"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const statusDiv = document.getElementById('status-message');
-        const whatsappNumber = "201223314173"; 
         
-        // ... (دوال getCurrentDateTime و toggleReasonField هنا) ...
+        // ⚠️ رقم المشرف الذي ستذهب إليه رسالة الواتساب
+        const whatsappNumber = "201005525050"; 
 
-        document.getElementById('attendanceForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            // ... (الحصول على البيانات) ...
-            
-            // ----------------------------------------------------------------
-            // 1. الحفظ في Firebase (في مجموعة user_attendance)
-            // ----------------------------------------------------------------
-            // ... (كود الحفظ لكل يوم مختار هنا) ...
-            
-            // ----------------------------------------------------------------
-            // 2. إعداد رسالة الواتساب
-            // ----------------------------------------------------------------
-            // ... (كود إعداد رسالة الواتساب هنا) ...
-            
-        });
+        // ----------------------------------------------------------------
+        // 2. قائمة الأسماء والأيام (ثابتة)
+        // ----------------------------------------------------------------
+        const VOLUNTEER_NAMES = [
+            "أحمد", "هدير", "محمد إبراهيم", "محمد عبدالحميد", "سامى", 
+            "ممتاز", "حبيبه", "ساندى", "رحاب", "معاذ", "مازن", "يوسف", 
+            "إبراهيم", "مروان", "عبدالرحمن"
+        ];
         
-        // ... (باقي كود الجافاسكريبت هنا) ...
+        const DAYS_OF_WEEK = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+
+        // ----------------------------------------------------------------
+        // 3. دوال مساعدة
+        // ----------------------------------------------------------------
+        
+        // جلب التاريخ والوقت الحالي
+        function getCurrentDateTime() {
+            const now = new Date();
+            const date = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+            const time = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+            return `${date} – ${time}`;
+        }
+        
+        // إظهار حقل السبب عند اختيار 'اعتذار'
+        function toggleReasonField() {
+            const status = document.getElementById('status').value;
+            const reasonField = document.getElementById('reasonField');
+            
+            if (status === 'اعتذار') {
+                reasonField.style.display = 'block';
+                document.getElementById('reason').required = true;
+            } else {
+                reasonField.style.display = 'none';
+                document.getElementById('reason').required = false;
+            }
+        }
+        
+        // تعبئة حقول الأسماء والأيام عند تحميل الصفحة
+        function initializeForm() {
+            const nameSelect = document.getElementById('volunteerName');
+            VOLUNTEER_NAMES.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                nameSelect.appendChild(option);
+            });
+            
+            const daysContainer = document.getElementById('daysCheckboxes');
+            DAYS_OF_WEEK.forEach(day => {
+                const dayLabel = document.createElement('label');
+                dayLabel.classList.add('day-checkbox');
+                dayLabel.innerHTML = `
+                    <input type="checkbox" name="day" value="${day}"> ${day}
+                `;
+                daysContainer.appendChild(dayLabel);
+            });
+            
+            // تهيئة حقل السبب عند التحميل
+            toggleReasonField();
+        }
+
+
+        // ----------------------------------------------------------------
+        // 4. وظيفة الحفظ في Firebase
+        // ----------------------------------------------------------------
+        async function saveToFirebase(data) {
+            const { volunteerName, day, status, reason, registrationTime } = data;
+            
+            // إنشاء معرّف فريد لكل تسجيل (الاسم + اليوم) لمنع التكرار لنفس اليوم
+            const docId = `${volunteerName}_${day}`; 
+            
+            try {
+                await db.collection("user_attendance").doc(docId).set({
+                    volunteerName,
+                    day,
+                    status,
+                    reason,
+                    registrationTime
+                });
+                return true;
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                return false;
+            }
+        }
+
+
+        // ----------------------------------------------------------------
+        // 5. معالجة إرسال النموذج
+        // ----------------------------------------------------------------
+        document.getElementById('attendanceForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const volunteerName = document.getElementById('volunteerName').value;
+            const status = document.getElementById('status').value;
+            const reason = document.getElementById('reason').value || "لا يوجد سبب محدد";
+            const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
+            const registrationTime = getCurrentDateTime();
+            
+            if (!volunteerName) {
+                statusDiv.className = 'status-error';
+                statusDiv.textContent = 'الرجاء اختيار اسمك أولاً.';
+                return;
+            }
+
+            if (daysCheckboxes.length === 0) {
+                statusDiv.className = 'status-error';
+                statusDiv.textContent = 'الرجاء اختيار يوم واحد على الأقل.';
+                return;
+            }
+            
+            if (status === 'اعتذار' && !document.getElementById('reason').value.trim()) {
+                statusDiv.className = 'status-error';
+                statusDiv.textContent = 'الرجاء كتابة سبب الاعتذار.';
+                return;
+            }
+            
+            statusDiv.className = '';
+            statusDiv.textContent = 'جاري التسجيل...';
+            
+            // ------------------------------------------
+            // 1. الحفظ في Firebase لكل يوم مختار
+            // ------------------------------------------
+            const selectedDays = Array.from(daysCheckboxes).map(cb => cb.value);
+            let saveSuccess = true;
+            
+            for (const day of selectedDays) {
+                const data = { volunteerName, day, status, reason, registrationTime };
+                const result = await saveToFirebase(data);
+                if (!result) {
+                    saveSuccess = false;
+                    break; 
+                }
+            }
+
+            if (!saveSuccess) {
+                statusDiv.className = 'status-error';
+                statusDiv.textContent = '❌ فشل التسجيل في قاعدة البيانات. تحقق من اتصالك وقواعد Firebase.';
+                document.getElementById('whatsapp-link').style.display = 'none';
+                return;
+            }
+            
+            // ------------------------------------------
+            // 2. إعداد رسالة الواتساب
+            // ------------------------------------------
+            const actionText = status === 'حضور' ? 'حضور' : 'اعتذار طارئ';
+            const daysList = selectedDays.join('، ');
+            
+            let message = `
+*📌 نموذج تسجيل المتطوعين*
+
+*الاسم:* ${volunteerName}
+*الحالة:* ${actionText}
+*الأيام المسجلة:* ${daysList}
+*وقت التسجيل:* ${registrationTime}
+`;
+            
+            if (status === 'اعتذار') {
+                message += `
+*سبب الاعتذار:* ${reason}
+`;
+            }
+
+            message += `
+---
+*(تم تسجيل هذه البيانات أيضاً في قاعدة بيانات Firebase)*
+`;
+            
+            const encodedMessage = encodeURIComponent(message.trim());
+            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+            // ------------------------------------------
+            // 3. تحديث واجهة المستخدم
+            // ------------------------------------------
+            statusDiv.className = 'status-success';
+            statusDiv.textContent = `✅ تم تسجيل بياناتك بنجاح في Firebase.`;
+            
+            const waButton = document.getElementById('wa-button');
+            waButton.href = whatsappUrl;
+            document.getElementById('whatsapp-link').style.display = 'block';
+            
+            // *اختياري: مسح النموذج بعد الإرسال*
+            // document.getElementById('attendanceForm').reset();
+            // toggleReasonField(); 
+        });
+
+        // تشغيل دالة التعبئة عند تحميل الصفحة
+        window.onload = initializeForm;
+
     </script>
 </body>
 </html>
