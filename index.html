@@ -3,48 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نموذج تخزين Firebase</title>
+    <title>موقعك مع التخزين الديناميكي</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 40px;
             background-color: #f4f4f4;
             color: #333;
+            text-align: right; /* لمحاذاة النص بشكل صحيح في RTL */
         }
         .container {
             max-width: 600px;
             margin: auto;
             background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #4a4a4a;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 10px;
         }
         input[type="text"], textarea {
             width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
             box-sizing: border-box;
+            font-size: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
         }
         button {
-            background-color: #5cb85c;
+            background-color: #007bff;
             color: white;
-            padding: 10px 15px;
+            padding: 12px 20px;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
         }
         button:hover {
-            background-color: #4cae4c;
+            background-color: #0056b3;
+        }
+        #statusMessage {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>أرسل رسالة وقم بتخزينها!</h1>
-    <p>سيتم حفظ هذه الرسالة مباشرة في قاعدة بيانات Firebase (Firestore).</p>
+    <h1>نموذج إرسال الرسائل (مدعوم من Firebase)</h1>
+    <p>هذا النموذج يسمح لأي زائر بإرسال بيانات ليتم حفظها مباشرة في قاعدة بيانات Firestore الخاصة بك.</p>
     
     <form id="contactForm">
         <label for="name">الاسم:</label>
@@ -56,29 +76,29 @@
         <button type="submit">إرسال وحفظ البيانات</button>
     </form>
 
-    <div id="statusMessage" style="margin-top: 15px; font-weight: bold;"></div>
+    <div id="statusMessage"></div>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+
 <script>
     // ----------------------------------------------------
-    // مفاتيح Firebase الخاصة بك (تم إدراجها هنا)
+    // مفاتيح Firebase الخاصة بمشروعك العامل (rdtt-15cbe)
     // ----------------------------------------------------
     const firebaseConfig = {
-        apiKey: "AIzaSyBAPZvA8jXABF1PRuaxQE95hmh5Gy_y0Xs",
-        authDomain: "volunteers-43d21.firebaseapp.com",
-        databaseURL: "https://volunteers-43d21-default-rtdb.europe-west1.firebasedatabase.app",
-        projectId: "volunteers-43d21",
-        storageBucket: "volunteers-43d21.firebasestorage.app",
-        messagingSenderId: "320874610236",
-        appId: "1:320874610236:web:443106dfcace107a364d39"
+        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+        authDomain: "rdtt-15cbe.firebaseapp.com",
+        projectId: "rdtt-15cbe",
+        storageBucket: "rdtt-15cbe.firebasestorage.app",
+        messagingSenderId: "219502671343",
+        appId: "1:219502671343:web:b289b11869e25c9a30321a"
     };
 
     // تهيئة Firebase
     firebase.initializeApp(firebaseConfig);
 
-    // الوصول إلى قاعدة البيانات Firestore (الأكثر شيوعًا للمواقع الحديثة)
+    // الوصول إلى قاعدة البيانات Firestore
     const db = firebase.firestore();
 
     const form = document.getElementById('contactForm');
@@ -86,23 +106,29 @@
 
     form.addEventListener('submit', (e) => {
         e.preventDefault(); // منع الإرسال التقليدي للصفحة
-        statusDiv.textContent = "جاري الحفظ...";
+        statusDiv.style.backgroundColor = '#fff3cd';
+        statusDiv.style.color = '#856404';
+        statusDiv.textContent = "جاري الحفظ، يرجى الانتظار...";
 
         const name = document.getElementById('name').value;
         const message = document.getElementById('message').value;
 
-        // دالة حفظ البيانات في Firestore
+        // دالة حفظ البيانات في Firestore في مجموعة "رسائل_الزوار"
         db.collection("رسائل_الزوار").add({
             الاسم: name,
             الرسالة: message,
             التاريخ: firebase.firestore.FieldValue.serverTimestamp()
         })
         .then(() => {
-            statusDiv.textContent = "تم حفظ الرسالة بنجاح! تحقق من Firebase.";
+            statusDiv.style.backgroundColor = '#d4edda';
+            statusDiv.style.color = '#155724';
+            statusDiv.textContent = "✅ تم حفظ الرسالة بنجاح! يمكنك الآن التحقق من Firestore.";
             form.reset(); // تفريغ النموذج
         })
         .catch((error) => {
-            statusDiv.textContent = "حدث خطأ: " + error.message;
+            statusDiv.style.backgroundColor = '#f8d7da';
+            statusDiv.style.color = '#721c24';
+            statusDiv.textContent = "❌ حدث خطأ في الحفظ: " + error.message;
             console.error("خطأ في الحفظ: ", error);
         });
     });
