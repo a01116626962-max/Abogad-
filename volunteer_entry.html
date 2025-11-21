@@ -114,7 +114,7 @@
     const db = firebase.firestore();
 
     // ----------------------------------------------------------------
-    // 1. الإعدادات الثابتة (يجب أن تتطابق مع لوحة المشرف)
+    // 1. الإعدادات الثابتة
     // ----------------------------------------------------------------
     const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
     const ALL_WORKING_DAYS = WORKING_DAYS; 
@@ -124,10 +124,11 @@
         "هدير": ALL_WORKING_DAYS,
         "محمد إبراهيم": ALL_WORKING_DAYS,
         "محمد عبدالحميد": ALL_WORKING_DAYS.filter(day => day !== "الأحد"),
-        "سامى": ["السبت", "الأحد", "الثلاثاء"],
+        // تم إلغاء تعديل سامي، واستخدام التعديلات المطلوبة فقط:
+        "سامي": ["السبت", "الأحد", "الثلاثاء"],
         "ممتاز": ALL_WORKING_DAYS,
-        "حبيبة": ALL_WORKING_DAYS, // ✅ تم التعديل
-        "ساندي": ["السبت", "الأحد", "الأربعاء"], // ✅ تم التعديل
+        "حبيبة": ALL_WORKING_DAYS, // ✅ تم التعديل من 'حبيبه' إلى 'حبيبة'
+        "ساندي": ["السبت", "الأحد", "الأربعاء"], // ✅ تم التعديل من 'ساندى' إلى 'ساندي'
         "رحاب": ["السبت", "الإثنين", "الثلاثاء"],
         "معاذ": ["الأحد", "الثلاثاء", "الخميس"],
         "يوسف": ALL_WORKING_DAYS.filter(day => day !== "الثلاثاء" && day !== "الأربعاء"),
@@ -143,7 +144,7 @@
     // ملء قائمة الأسماء عند تحميل الصفحة
     function populateNameDropdown() {
         const select = document.getElementById('volunteer-name');
-        const names = Object.keys(FIXED_VOLUNTEERS).sort(); // لترتيب الأسماء أبجديًا
+        const names = Object.keys(FIXED_VOLUNTEERS).sort(); 
         
         names.forEach(name => {
             const option = document.createElement('option');
@@ -169,7 +170,7 @@
     }
 
     // ----------------------------------------------------------------
-    // 3. وظيفة عرض رسالة التأكيد (التعديل المطلوب هنا)
+    // 3. وظيفة عرض رسالة التأكيد (تم التعديل حسب طلبك)
     // ----------------------------------------------------------------
     function displayConfirmation(name, status, days, reason, registrationTime) {
         let confirmationMessage = '';
@@ -216,7 +217,8 @@
         const name = document.getElementById('volunteer-name').value;
         const status = document.getElementById('status').value;
         const reason = document.getElementById('reason').value || '';
-        const days = FIXED_VOLUNTEERS[name];
+        // يجب أن نتحقق من أن الاسم موجود في FIXED_VOLUNTEERS
+        const days = FIXED_VOLUNTEERS[name] || []; 
         
         // التحقق من المتطلبات
         if (status === 'اعتذار' && !reason.trim()) {
@@ -232,18 +234,8 @@
         const registrationTime = `${dateString} – ${timeString}`;
         
         // إنشاء مفتاح المستند (مثال: أحمد_السبت) لتجنب التكرار لنفس اليوم
-        // نستخدم اليوم الحالي كجزء من المفتاح
         const todayDayName = now.toLocaleDateString('ar-EG', { weekday: 'long' });
-        
-        // تحويل اسم اليوم من صيغة 'السبت' إلى 'السبت' (لا نحتاج إلى تغيير)
         let docIdDay = todayDayName;
-        
-        // التأكد من أن اليوم الحالي هو يوم عمل للمتطوع (اختياري)
-        if (!days.includes(docIdDay)) {
-             // يمكن عرض رسالة تحذيرية هنا إذا لم يكن اليوم مجدولًا، لكننا سنسمح بالتسجيل
-             // للتسجيلات الطارئة للحضور أو الاعتذار
-        }
-        
         const docId = `${name}_${docIdDay}`;
 
         try {
@@ -265,7 +257,7 @@
         } catch (error) {
             const resultArea = document.getElementById('result-area');
             resultArea.textContent = `❌ خطأ في إرسال البيانات: ${error.message}`;
-            resultArea.style.backgroundColor = '#f8d7da'; // لون أحمر فاتح للخطأ
+            resultArea.style.backgroundColor = '#f8d7da'; 
             resultArea.style.borderColor = '#f5c6cb';
             resultArea.style.display = 'block';
             console.error("خطأ في إرسال البيانات:", error);
