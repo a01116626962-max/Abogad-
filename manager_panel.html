@@ -328,7 +328,6 @@
         const attendanceList = currentAttendanceList;
         
         const now = new Date();
-        // التاريخ الحالي: 21 نوفمبر 2025
         const dateString = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
         
         let listText = attendanceList.map((name, index) => `${index + 1}. ${name}`).join('\n');
@@ -337,20 +336,20 @@
             listText = "لا يوجد حضور مؤكد لهذا اليوم.";
         }
         
-        // بناء الرسالة بالتنسيق الجديد بدون نجوم
+        // 🌟 تم تعديل الرسالة لتطابق الصيغة المطلوبة 🌟
         const message = `
 📌 قائمة الحضور اليومية
 🗓️ اليوم : ${day} - ${dateString}
-👥 إجمالي الحضور المؤكد : ${attendanceList.length} متطوع
+👥 إجمالي المتطوعين : ${attendanceList.length}
 
 ---
-قائمة المتطوعين المجدولين والحاضرين اليوم:
+قائمة المتطوعين الحاضرين اليوم:
 ${listText}
 `;
         
         const encodedMessage = encodeURIComponent(message.trim());
         
-        // 🌟 التعديل هنا: استخدام wa.me/?text= لفتح شاشة اختيار جهة الاتصال/المجموعة 🌟
+        // استخدام wa.me/?text= لفتح شاشة اختيار جهة الاتصال/المجموعة
         const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
         
         const sendButton = document.getElementById('static-whatsapp-button');
