@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نموذج تسجيل المتطوعين</title>
+    <title>تسجيل حضور المتطوعين</title>
+    
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -18,259 +19,340 @@
             max-width: 600px;
             margin: 0 auto;
             background: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
         }
-        h1 {
+        h2 {
             color: #007bff;
+            text-align: center;
+            margin-bottom: 25px;
             border-bottom: 2px solid #eee;
             padding-bottom: 10px;
-            margin-bottom: 20px;
         }
         label {
             display: block;
             margin-bottom: 8px;
             font-weight: bold;
+            color: #555;
         }
         select, textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin-bottom: 20px;
             border: 1px solid #ccc;
-            border-radius: 4px;
+            border-radius: 6px;
             box-sizing: border-box;
+            font-size: 16px;
         }
-        button {
-            padding: 10px 15px;
+        .days-container {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .day-checkbox {
+            display: inline-block;
+            margin-left: 20px;
+            margin-bottom: 10px;
+            font-weight: normal;
+        }
+        .submit-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background-color: #28a745; /* أخضر للإرسال */
             color: white;
-            background-color: #28a745;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
-            margin-left: 10px;
+            font-size: 18px;
             transition: background-color 0.3s;
         }
-        button:hover {
-            background-color: #218838;
+        .submit-btn:hover {
+            background-color: #1e7e34;
         }
-        #reason-group {
-            display: none;
-        }
-        #result-area {
+        #status-message {
             margin-top: 20px;
             padding: 15px;
-            border-radius: 4px;
-            background-color: #e2f0d9; /* لون أخضر فاتح للنتائج */
+            border-radius: 6px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .status-success {
+            background-color: #d4edda;
+            color: #155724;
             border: 1px solid #c3e6cb;
-            white-space: pre-wrap; /* للحفاظ على التنسيق والسطور الجديدة */
+        }
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        #whatsapp-link a {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        #whatsapp-link a:hover {
+            text-decoration: underline;
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 </head>
 <body>
 
-<div class="container">
-    <h1>📝 نموذج تسجيل الحضور والاعتذار</h1>
+    <div class="container">
+        <h2>تسجيل حضور المتطوعين</h2>
 
-    <form id="attendance-form">
-        <label for="volunteer-name">1. اختيار الاسم:</label>
-        <select id="volunteer-name" required>
-            <option value="">-- اختر اسمك --</option>
-            </select>
-
-        <label for="status">2. تسجيل الحالة:</label>
-        <select id="status" onchange="toggleReasonField()" required>
-            <option value="">-- حضور أو اعتذار --</option>
-            <option value="حضور">حضور</option>
-            <option value="اعتذار">اعتذار طارئ</option>
-        </select>
-
-        <div id="reason-group">
-            <label for="reason">3. سبب الاعتذار (مطلوب عند الاعتذار):</label>
-            <textarea id="reason" rows="3" placeholder="يرجى كتابة سبب وجيه للاعتذار..."></textarea>
-        </div>
-
-        <button type="submit">تسجيل الحالة</button>
-    </form>
-
-    <div id="result-area" style="display: none;"></div>
-</div>
-
-<script>
-    // ⚠️ مفاتيح Firebase الخاصة بمشروعك العامل (rdtt-15cbe) - نفس المفاتيح
-    const firebaseConfig = {
-        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
-        authDomain: "rdtt-15cbe.firebaseapp.com",
-        projectId: "rdtt-15cbe",
-        storageBucket: "rdtt-15cbe.firebasestorage.app",
-        messagingSenderId: "219502671343",
-        appId: "1:219502671343:web:b289b11869e25c9a30321a"
-    };
-
-    // تهيئة Firebase والوصول إلى Firestore
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    // ----------------------------------------------------------------
-    // 1. الإعدادات الثابتة
-    // ----------------------------------------------------------------
-    const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
-    const ALL_WORKING_DAYS = WORKING_DAYS; 
-
-    const FIXED_VOLUNTEERS = {
-        "أحمد": ALL_WORKING_DAYS.filter(day => day !== "الثلاثاء" && day !== "الأربعاء"),
-        "هدير": ALL_WORKING_DAYS,
-        "محمد إبراهيم": ALL_WORKING_DAYS,
-        "محمد عبدالحميد": ALL_WORKING_DAYS.filter(day => day !== "الأحد"),
-        // تم إلغاء تعديل سامي، واستخدام التعديلات المطلوبة فقط:
-        "سامي": ["السبت", "الأحد", "الثلاثاء"],
-        "ممتاز": ALL_WORKING_DAYS,
-        "حبيبة": ALL_WORKING_DAYS, // ✅ تم التعديل من 'حبيبه' إلى 'حبيبة'
-        "ساندي": ["السبت", "الأحد", "الأربعاء"], // ✅ تم التعديل من 'ساندى' إلى 'ساندي'
-        "رحاب": ["السبت", "الإثنين", "الثلاثاء"],
-        "معاذ": ["الأحد", "الثلاثاء", "الخميس"],
-        "يوسف": ALL_WORKING_DAYS.filter(day => day !== "الثلاثاء" && day !== "الأربعاء"),
-        "إبراهيم": ALL_WORKING_DAYS,
-        "مروان": ALL_WORKING_DAYS,
-        "عبدالرحمن": ALL_WORKING_DAYS.filter(day => day !== "الإثنين" && day !== "الخميس")
-    };
-    
-    // ----------------------------------------------------------------
-    // 2. وظائف الواجهة
-    // ----------------------------------------------------------------
-
-    // ملء قائمة الأسماء عند تحميل الصفحة
-    function populateNameDropdown() {
-        const select = document.getElementById('volunteer-name');
-        const names = Object.keys(FIXED_VOLUNTEERS).sort(); 
-        
-        names.forEach(name => {
-            const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
-            select.appendChild(option);
-        });
-    }
-
-    // إظهار وإخفاء حقل السبب عند اختيار حالة الاعتذار
-    function toggleReasonField() {
-        const status = document.getElementById('status').value;
-        const reasonGroup = document.getElementById('reason-group');
-        const reasonTextarea = document.getElementById('reason');
-
-        if (status === 'اعتذار') {
-            reasonGroup.style.display = 'block';
-            reasonTextarea.setAttribute('required', 'required');
-        } else {
-            reasonGroup.style.display = 'none';
-            reasonTextarea.removeAttribute('required');
-        }
-    }
-
-    // ----------------------------------------------------------------
-    // 3. وظيفة عرض رسالة التأكيد (تم التعديل حسب طلبك)
-    // ----------------------------------------------------------------
-    function displayConfirmation(name, status, days, reason, registrationTime) {
-        let confirmationMessage = '';
-        
-        if (status === 'حضور') {
-            confirmationMessage = `
-📌 حضور متطوع 
-
-الاسم: ${name}
-الحالة: حضور
-الأيام المسجلة: ${days.join('، ')}
-وقت التسجيل: ${registrationTime}
-
----
-تم تسجيل الحضور فى الموقع ✅️
-`;
-        } else if (status === 'اعتذار') {
-            confirmationMessage = `
-📌 اعتذار متطوع 
-
-الاسم: ${name}
-الحالة: اعتذار طارئ
-الأيام المسجلة: ${days.join('، ')}
-وقت التسجيل: ${registrationTime}
-سبب الاعتذار: ${reason}
-
----
-تم تسجيل الاعتذار فى الموقع ✅️
-`;
-        }
-
-        const resultArea = document.getElementById('result-area');
-        resultArea.textContent = confirmationMessage.trim();
-        resultArea.style.display = 'block';
-    }
-
-
-    // ----------------------------------------------------------------
-    // 4. وظيفة إرسال النموذج إلى Firebase
-    // ----------------------------------------------------------------
-    document.getElementById('attendance-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        const name = document.getElementById('volunteer-name').value;
-        const status = document.getElementById('status').value;
-        const reason = document.getElementById('reason').value || '';
-        // يجب أن نتحقق من أن الاسم موجود في FIXED_VOLUNTEERS
-        const days = FIXED_VOLUNTEERS[name] || []; 
-        
-        // التحقق من المتطلبات
-        if (status === 'اعتذار' && !reason.trim()) {
-             alert("يرجى كتابة سبب الاعتذار أولاً.");
-             return;
-        }
-        if (!name || !status) return;
-
-        // تنسيق التاريخ والوقت
-        const now = new Date();
-        const dateString = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
-        const timeString = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
-        const registrationTime = `${dateString} – ${timeString}`;
-        
-        // إنشاء مفتاح المستند (مثال: أحمد_السبت) لتجنب التكرار لنفس اليوم
-        const todayDayName = now.toLocaleDateString('ar-EG', { weekday: 'long' });
-        let docIdDay = todayDayName;
-        const docId = `${name}_${docIdDay}`;
-
-        try {
-            await db.collection("user_attendance").doc(docId).set({
-                volunteerName: name,
-                status: status,
-                reason: reason,
-                day: docIdDay,
-                registrationTime: registrationTime
-            });
-
-            // عرض رسالة التأكيد الجديدة
-            displayConfirmation(name, status, days, reason, registrationTime);
-
-            // إعادة تعيين النموذج بعد التسجيل الناجح
-            document.getElementById('attendance-form').reset();
-            toggleReasonField();
+        <form id="attendanceForm">
             
-        } catch (error) {
-            const resultArea = document.getElementById('result-area');
-            resultArea.textContent = `❌ خطأ في إرسال البيانات: ${error.message}`;
-            resultArea.style.backgroundColor = '#f8d7da'; 
-            resultArea.style.borderColor = '#f5c6cb';
-            resultArea.style.display = 'block';
-            console.error("خطأ في إرسال البيانات:", error);
+            <label for="volunteerName">الاسم:</label>
+            <select id="volunteerName" required>
+                <option value="">اختر اسمك...</option>
+                </select>
+
+            <label>الأيام التي ستأتي فيها (يمكن اختيار يوم أو أكثر):</label>
+            <div id="daysCheckboxes" class="days-container">
+                </div>
+
+            <label for="status">الحالة:</label>
+            <select id="status" required onchange="toggleReasonField()">
+                <option value="حضور">تسجيل حضور</option>
+                <option value="اعتذار">اعتذار طارئ</option>
+            </select>
+            
+            <div id="reasonField" style="display:none;">
+                <label for="reason">سبب الاعتذار (مهم):</label>
+                <textarea id="reason" rows="3" placeholder="اذكر سبب اعتذارك بالتفصيل..."></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn">تسجيل وإرسال للواتساب</button>
+        </form>
+
+        <div id="status-message"></div>
+        <div id="whatsapp-link" style="display:none;">
+            <a href="#" id="wa-button" target="_blank">انقر هنا لإرسال البيانات عبر واتساب</a>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <script>
+        // ----------------------------------------------------------------
+        // 1. إعدادات Firebase
+        // ----------------------------------------------------------------
+        // ⚠️ يجب استخدام مفاتيح مشروعك (rdtt-15cbe)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+            authDomain: "rdtt-15cbe.firebaseapp.com",
+            projectId: "rdtt-15cbe",
+            storageBucket: "rdtt-15cbe.firebasestorage.app",
+            messagingSenderId: "219502671343",
+            appId: "1:219502671343:web:b289b11869e25c9a30321a"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const statusDiv = document.getElementById('status-message');
+        
+        // ⚠️ رقم المشرف الذي ستذهب إليه رسالة الواتساب
+        const whatsappNumber = "201005525050"; 
+
+        // ----------------------------------------------------------------
+        // 2. قائمة الأسماء والأيام (ثابتة - كما أرسلتها أنت بالضبط)
+        // ----------------------------------------------------------------
+        const VOLUNTEER_NAMES = [
+            "أحمد", "هدير", "محمد إبراهيم", "محمد عبدالحميد", "سامى", 
+            "ممتاز", "حبيبه", "ساندى", "رحاب", "معاذ", "مازن", "يوسف", 
+            "إبراهيم", "مروان", "عبدالرحمن"
+        ];
+        
+        const DAYS_OF_WEEK = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+
+        // ----------------------------------------------------------------
+        // 3. دوال مساعدة
+        // ----------------------------------------------------------------
+        
+        // جلب التاريخ والوقت الحالي
+        function getCurrentDateTime() {
+            const now = new Date();
+            const date = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+            const time = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
+            return `${date} – ${time}`;
         }
-    });
+        
+        // إظهار حقل السبب عند اختيار 'اعتذار'
+        function toggleReasonField() {
+            const status = document.getElementById('status').value;
+            const reasonField = document.getElementById('reasonField');
+            
+            if (status === 'اعتذار') {
+                reasonField.style.display = 'block';
+                document.getElementById('reason').required = true;
+            } else {
+                reasonField.style.display = 'none';
+                document.getElementById('reason').required = false;
+            }
+        }
+        
+        // تعبئة حقول الأسماء والأيام عند تحميل الصفحة
+        function initializeForm() {
+            const nameSelect = document.getElementById('volunteerName');
+            VOLUNTEER_NAMES.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                nameSelect.appendChild(option);
+            });
+            
+            const daysContainer = document.getElementById('daysCheckboxes');
+            DAYS_OF_WEEK.forEach(day => {
+                const dayLabel = document.createElement('label');
+                dayLabel.classList.add('day-checkbox');
+                dayLabel.innerHTML = `
+                    <input type="checkbox" name="day" value="${day}"> ${day}
+                `;
+                daysContainer.appendChild(dayLabel);
+            });
+            
+            // تهيئة حقل السبب عند التحميل
+            toggleReasonField();
+        }
 
-    // تشغيل وظيفة ملء قائمة الأسماء عند تحميل الصفحة
-    window.onload = () => {
-        populateNameDropdown();
-        toggleReasonField();
-    };
 
-</script>
+        // ----------------------------------------------------------------
+        // 4. وظيفة الحفظ في Firebase
+        // ----------------------------------------------------------------
+        async function saveToFirebase(data) {
+            const { volunteerName, day, status, reason, registrationTime } = data;
+            
+            // إنشاء معرّف فريد لكل تسجيل (الاسم + اليوم) لمنع التكرار لنفس اليوم
+            const docId = `${volunteerName}_${day}`; 
+            
+            try {
+                await db.collection("user_attendance").doc(docId).set({
+                    volunteerName,
+                    day,
+                    status,
+                    reason,
+                    registrationTime
+                });
+                return true;
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                return false;
+            }
+        }
 
+
+        // ----------------------------------------------------------------
+        // 5. معالجة إرسال النموذج
+        // ----------------------------------------------------------------
+        document.getElementById('attendanceForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const volunteerName = document.getElementById('volunteerName').value;
+            const status = document.getElementById('status').value;
+            const reason = document.getElementById('reason').value || "لا يوجد سبب محدد";
+            const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
+            const registrationTime = getCurrentDateTime();
+            
+            if (!volunteerName) {
+                statusDiv.className = 'status-error';
+                statusDiv.textContent = 'الرجاء اختيار اسمك أولاً.';
+                return;
+            }
+
+            if (daysCheckboxes.length === 0) {
+                statusDiv.className = 'status-error';
+                statusDiv.textContent = 'الرجاء اختيار يوم واحد على الأقل.';
+                return;
+            }
+            
+            if (status === 'اعتذار' && !document.getElementById('reason').value.trim()) {
+                statusDiv.className = 'status-error';
+                statusDiv.textContent = 'الرجاء كتابة سبب الاعتذار.';
+                return;
+            }
+            
+            statusDiv.className = '';
+            statusDiv.textContent = 'جاري التسجيل...';
+            
+            // ------------------------------------------
+            // 1. الحفظ في Firebase لكل يوم مختار
+            // ------------------------------------------
+            const selectedDays = Array.from(daysCheckboxes).map(cb => cb.value);
+            let saveSuccess = true;
+            
+            for (const day of selectedDays) {
+                const data = { volunteerName, day, status, reason, registrationTime };
+                const result = await saveToFirebase(data);
+                if (!result) {
+                    saveSuccess = false;
+                    break; 
+                }
+            }
+
+            if (!saveSuccess) {
+                statusDiv.className = 'status-error';
+                statusDiv.textContent = '❌ فشل التسجيل في قاعدة البيانات. تحقق من اتصالك وقواعد Firebase.';
+                document.getElementById('whatsapp-link').style.display = 'none';
+                return;
+            }
+            
+            // ------------------------------------------
+            // 2. إعداد رسالة الواتساب (التعديل المطلوب هنا)
+            // ------------------------------------------
+            const actionText = status === 'حضور' ? 'حضور' : 'اعتذار طارئ';
+            const actionTitle = status === 'حضور' ? 'حضور متطوع' : 'اعتذار متطوع'; // ✅ إضافة العنوان الجديد
+            const actionEnd = status === 'حضور' ? 'تم تسجيل الحضور فى الموقع ✅️' : 'تم تسجيل الاعتذار فى الموقع ✅️'; // ✅ إضافة التذييل الجديد
+            const daysList = selectedDays.join('، ');
+            
+            let message = `
+📌 ${actionTitle}
+
+الاسم: ${volunteerName}
+الحالة: ${actionText}
+الأيام المسجلة: ${daysList}
+وقت التسجيل: ${registrationTime}
+`; // ✅ حذف النجوم من هذه الأسطر
+            
+            if (status === 'اعتذار') {
+                message += `
+سبب الاعتذار: ${reason}
+`; // ✅ حذف النجمة من هذا السطر
+            }
+
+            message += `
+---
+${actionEnd}
+`; // ✅ استبدال النص الختامي بالنص المطلوب
+
+            const encodedMessage = encodeURIComponent(message.trim());
+            const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
+
+            // ------------------------------------------
+            // 3. تحديث واجهة المستخدم
+            // ------------------------------------------
+            statusDiv.className = 'status-success';
+            statusDiv.textContent = `✅ تم تسجيل بياناتك بنجاح في Firebase.`;
+            
+            const waButton = document.getElementById('wa-button');
+            waButton.href = whatsappUrl;
+            document.getElementById('whatsapp-link').style.display = 'block';
+            
+            // *اختياري: مسح النموذج بعد الإرسال*
+            // document.getElementById('attendanceForm').reset();
+            // toggleReasonField(); 
+        });
+
+        // تشغيل دالة التعبئة عند تحميل الصفحة
+        window.onload = initializeForm;
+
+    </script>
 </body>
 </html>
