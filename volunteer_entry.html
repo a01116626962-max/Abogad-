@@ -130,8 +130,8 @@
                 <textarea id="reason" rows="3" placeholder="اذكر سبب اعتذارك بالتفصيل..."></textarea>
 
                 <div id="lateReasonContainer" style="display:none;">
-                    <label for="lateReason">سبب تأخر الاعتذار (إذا كان في نفس اليوم):</label>
-                    <textarea id="lateReason" rows="2" placeholder="اذكر سبب تأخرك في الإبلاغ اليوم..."></textarea>
+                    <label for="lateReason">سبب تأخر الاعتذار:</label>
+                    <textarea id="lateReason" rows="2" placeholder="اذكر سبب تأخرك في الإبلاغ..."></textarea>
                 </div>
             </div>
 
@@ -203,21 +203,25 @@
             const reasonField = document.getElementById('reasonField');
             const reasonInput = document.getElementById('reason');
             const lateReasonContainer = document.getElementById('lateReasonContainer');
-            
+            const lateReasonInput = document.getElementById('lateReason'); // ⚠️ تم جلب الحقل الجديد
+
             if (status === 'اعتذار') {
                 reasonField.style.display = 'block';
                 reasonInput.required = true;
 
                 if (isCurrentDaySelected()) {
                     lateReasonContainer.style.display = 'block';
+                    lateReasonInput.required = true; // ⚠️ جعل الحقل إجباريًا عند الظهور
                 } else {
                     lateReasonContainer.style.display = 'none';
+                    lateReasonInput.required = false; // إلغاء الإجبار عند الإخفاء
                 }
 
             } else {
                 reasonField.style.display = 'none';
                 reasonInput.required = false;
                 lateReasonContainer.style.display = 'none';
+                lateReasonInput.required = false; // إلغاء الإجبار
             }
         }
         
@@ -250,7 +254,6 @@
         // 4. وظيفة الحفظ في Firebase
         // ----------------------------------------------------------------
         async function saveToFirebase(data) {
-            // ✅ لا يتم تضمين lateReason هنا للحفاظ على ثبات الحقول القديمة
             const { volunteerName, day, status, reason, registrationTime } = data; 
             
             const docId = `${volunteerName}_${day}`; 
@@ -261,7 +264,7 @@
                     day,
                     status,
                     reason,
-                    registrationTime // يتم حفظ الحقول الخمسة الأصلية فقط
+                    registrationTime 
                 });
                 return true;
             } catch (e) {
@@ -279,18 +282,26 @@
 
             const volunteerName = document.getElementById('volunteerName').value;
             const status = document.getElementById('status').value;
-            const reason = document.getElementById('reason').value.trim() || "لا يوجد سبب محدد";
+            const reason = document.getElementById('reason').value.trim(); // لا يوجد قيمة افتراضية هنا لأن الحقل إجباري عند الظهور
             
-            // ✅ يتم جلب سبب التأخر هنا لاستخدامه في رسالة الواتساب فقط
-            let lateReason = "لا يوجد سبب لتأخر الإبلاغ"; 
-            if (document.getElementById('lateReasonContainer').style.display !== 'none') {
-                lateReason = document.getElementById('lateReason').value.trim() || "لم يذكر سبب تأخر الإبلاغ";
+            // جلب قيمة سبب التأخر
+            let lateReason = ""; 
+            const lateReasonContainer = document.getElementById('lateReasonContainer');
+            const lateReasonInput = document.getElementById('lateReason');
+
+            if (lateReasonContainer.style.display !== 'none') {
+                lateReason = lateReasonInput.value.trim();
+                // ✅ إضافة تحقق إجباري لسبب التأخر
+                if (!lateReason) {
+                    statusDiv.className = 'status-error';
+                    statusDiv.textContent = 'الرجاء كتابة سبب تأخر الاعتذار.';
+                    return;
+                }
             }
             
             const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
             const registrationTime = getCurrentDateTime();
             
-            // ... (Validation code remains the same) ...
             if (!volunteerName) {
                 statusDiv.className = 'status-error';
                 statusDiv.textContent = 'الرجاء اختيار اسمك أولاً.';
@@ -303,7 +314,7 @@
                 return;
             }
             
-            if (status === 'اعتذار' && !document.getElementById('reason').value.trim()) {
+            if (status === 'اعتذار' && !reason) {
                 statusDiv.className = 'status-error';
                 statusDiv.textContent = 'الرجاء كتابة سبب الاعتذار.';
                 return;
@@ -319,7 +330,7 @@
             let saveSuccess = true;
             
             for (const day of selectedDays) {
-                // ✅ يتم تمرير الحقول التي يجب حفظها في Firebase فقط
+                // نرسل الحقول المطلوبة لـ Firebase
                 const data = { volunteerName, day, status, reason, registrationTime }; 
                 const result = await saveToFirebase(data);
                 if (!result) {
@@ -356,8 +367,8 @@
                 message += `
 سبب الاعتذار: ${reason}
 `;
-                // ✅ يتم إضافة سبب تأخر الإبلاغ هنا (في الرسالة)
-                if (document.getElementById('lateReasonContainer').style.display !== 'none' && lateReason !== "لم يذكر سبب تأخر الإبلاغ") { 
+                // إضافة سبب تأخر الإبلاغ إذا كان موجوداً
+                if (lateReason) { 
                     message += `
 سبب تأخر الإبلاغ: ${lateReason}
 `;
