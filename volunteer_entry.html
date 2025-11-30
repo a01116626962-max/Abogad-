@@ -116,7 +116,7 @@
                 </select>
 
             <label>الأيام التي ستأتي فيها (يمكن اختيار يوم أو أكثر):</label>
-            <div id="daysCheckboxes" class="days-container">
+            <div id="daysCheckboxes" class="days-container" onchange="toggleReasonField()">
                 </div>
 
             <label for="status">الحالة:</label>
@@ -128,6 +128,11 @@
             <div id="reasonField" style="display:none;">
                 <label for="reason">سبب الاعتذار (مهم):</label>
                 <textarea id="reason" rows="3" placeholder="اذكر سبب اعتذارك بالتفصيل..."></textarea>
+
+                <div id="lateReasonContainer" style="display:none;">
+                    <label for="lateReason">سبب تأخر الاعتذار (إذا كان في نفس اليوم):</label>
+                    <textarea id="lateReason" rows="2" placeholder="اذكر سبب تأخرك في الإبلاغ اليوم..."></textarea>
+                </div>
             </div>
 
             <button type="submit" class="submit-btn">تسجيل وإرسال للواتساب</button>
@@ -145,9 +150,8 @@
         // ----------------------------------------------------------------
         // 1. إعدادات Firebase
         // ----------------------------------------------------------------
-        // ⚠️ يجب استخدام مفاتيح مشروعك (rdtt-15cbe)
         const firebaseConfig = {
-            apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+            apiKey: "AIzaSyCDJANXMfd6TR6R2ruLIi-xytlrB-LiCEs",
             authDomain: "rdtt-15cbe.firebaseapp.com",
             projectId: "rdtt-15cbe",
             storageBucket: "rdtt-15cbe.firebasestorage.app",
@@ -159,47 +163,64 @@
         const db = firebase.firestore();
         const statusDiv = document.getElementById('status-message');
         
-        // ⚠️ رقم المشرف الذي ستذهب إليه رسالة الواتساب - تم التعديل
         const whatsappNumber = "201223314173"; 
 
         // ----------------------------------------------------------------
-        // 2. قائمة الأسماء والأيام (ثابتة - تم تعديل الأسماء هنا)
+        // 2. قائمة الأسماء والأيام 
         // ----------------------------------------------------------------
         const VOLUNTEER_NAMES = [
             "أحمد", "هدير", "محمد إبراهيم", "محمد عبدالحميد", "سامى", 
-            "ممتاز", "حبيبة", "ساندي", "رحاب", "معاذ", "مازن", "يوسف", // ✅ تم التعديل
-            "إبراهيم", "مروان", "عبدالرحمن"
+            "ممتاز", "حبيبة", "ساندي", "رحاب", "معاذ", "مازن", "يوسف", 
+            "إبراهيم", "مروان", "عبدالرحمن", "معتز" 
         ];
         
-        const DAYS_OF_WEEK = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+        const DAYS_OF_WEEK = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
         // ----------------------------------------------------------------
         // 3. دوال مساعدة
         // ----------------------------------------------------------------
         
-        // جلب التاريخ والوقت الحالي
         function getCurrentDateTime() {
             const now = new Date();
             const date = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
             const time = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
             return `${date} – ${time}`;
         }
+
+        function isCurrentDaySelected() {
+            const now = new Date();
+            const currentDayIndex = now.getDay(); 
+            const currentDayArabic = DAYS_OF_WEEK[currentDayIndex];
+
+            const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
+            const selectedDays = Array.from(daysCheckboxes).map(cb => cb.value);
+
+            return selectedDays.includes(currentDayArabic);
+        }
         
-        // إظهار حقل السبب عند اختيار 'اعتذار'
         function toggleReasonField() {
             const status = document.getElementById('status').value;
             const reasonField = document.getElementById('reasonField');
+            const reasonInput = document.getElementById('reason');
+            const lateReasonContainer = document.getElementById('lateReasonContainer');
             
             if (status === 'اعتذار') {
                 reasonField.style.display = 'block';
-                document.getElementById('reason').required = true;
+                reasonInput.required = true;
+
+                if (isCurrentDaySelected()) {
+                    lateReasonContainer.style.display = 'block';
+                } else {
+                    lateReasonContainer.style.display = 'none';
+                }
+
             } else {
                 reasonField.style.display = 'none';
-                document.getElementById('reason').required = false;
+                reasonInput.required = false;
+                lateReasonContainer.style.display = 'none';
             }
         }
         
-        // تعبئة حقول الأسماء والأيام عند تحميل الصفحة
         function initializeForm() {
             const nameSelect = document.getElementById('volunteerName');
             VOLUNTEER_NAMES.forEach(name => {
@@ -210,7 +231,9 @@
             });
             
             const daysContainer = document.getElementById('daysCheckboxes');
-            DAYS_OF_WEEK.forEach(day => {
+            const DISPLAY_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+            
+            DISPLAY_DAYS.forEach(day => {
                 const dayLabel = document.createElement('label');
                 dayLabel.classList.add('day-checkbox');
                 dayLabel.innerHTML = `
@@ -219,7 +242,6 @@
                 daysContainer.appendChild(dayLabel);
             });
             
-            // تهيئة حقل السبب عند التحميل
             toggleReasonField();
         }
 
@@ -228,9 +250,9 @@
         // 4. وظيفة الحفظ في Firebase
         // ----------------------------------------------------------------
         async function saveToFirebase(data) {
-            const { volunteerName, day, status, reason, registrationTime } = data;
+            // ✅ لا يتم تضمين lateReason هنا للحفاظ على ثبات الحقول القديمة
+            const { volunteerName, day, status, reason, registrationTime } = data; 
             
-            // إنشاء معرّف فريد لكل تسجيل (الاسم + اليوم) لمنع التكرار لنفس اليوم
             const docId = `${volunteerName}_${day}`; 
             
             try {
@@ -239,7 +261,7 @@
                     day,
                     status,
                     reason,
-                    registrationTime
+                    registrationTime // يتم حفظ الحقول الخمسة الأصلية فقط
                 });
                 return true;
             } catch (e) {
@@ -257,10 +279,18 @@
 
             const volunteerName = document.getElementById('volunteerName').value;
             const status = document.getElementById('status').value;
-            const reason = document.getElementById('reason').value || "لا يوجد سبب محدد";
+            const reason = document.getElementById('reason').value.trim() || "لا يوجد سبب محدد";
+            
+            // ✅ يتم جلب سبب التأخر هنا لاستخدامه في رسالة الواتساب فقط
+            let lateReason = "لا يوجد سبب لتأخر الإبلاغ"; 
+            if (document.getElementById('lateReasonContainer').style.display !== 'none') {
+                lateReason = document.getElementById('lateReason').value.trim() || "لم يذكر سبب تأخر الإبلاغ";
+            }
+            
             const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
             const registrationTime = getCurrentDateTime();
             
+            // ... (Validation code remains the same) ...
             if (!volunteerName) {
                 statusDiv.className = 'status-error';
                 statusDiv.textContent = 'الرجاء اختيار اسمك أولاً.';
@@ -289,7 +319,8 @@
             let saveSuccess = true;
             
             for (const day of selectedDays) {
-                const data = { volunteerName, day, status, reason, registrationTime };
+                // ✅ يتم تمرير الحقول التي يجب حفظها في Firebase فقط
+                const data = { volunteerName, day, status, reason, registrationTime }; 
                 const result = await saveToFirebase(data);
                 if (!result) {
                     saveSuccess = false;
@@ -305,7 +336,7 @@
             }
             
             // ------------------------------------------
-            // 2. إعداد رسالة الواتساب (بالصيغة الجديدة)
+            // 2. إعداد رسالة الواتساب 
             // ------------------------------------------
             const actionText = status === 'حضور' ? 'حضور' : 'اعتذار طارئ';
             const actionTitle = status === 'حضور' ? 'حضور متطوع' : 'اعتذار متطوع';
@@ -325,6 +356,12 @@
                 message += `
 سبب الاعتذار: ${reason}
 `;
+                // ✅ يتم إضافة سبب تأخر الإبلاغ هنا (في الرسالة)
+                if (document.getElementById('lateReasonContainer').style.display !== 'none' && lateReason !== "لم يذكر سبب تأخر الإبلاغ") { 
+                    message += `
+سبب تأخر الإبلاغ: ${lateReason}
+`;
+                }
             }
 
             message += `
@@ -345,9 +382,6 @@ ${actionEnd}
             waButton.href = whatsappUrl;
             document.getElementById('whatsapp-link').style.display = 'block';
             
-            // *اختياري: مسح النموذج بعد الإرسال*
-            // document.getElementById('attendanceForm').reset();
-            // toggleReasonField(); 
         });
 
         // تشغيل دالة التعبئة عند تحميل الصفحة
