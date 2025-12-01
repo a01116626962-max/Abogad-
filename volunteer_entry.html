@@ -178,23 +178,22 @@
         // الأحد هو 0، السبت هو 6 في JavaScript
         const DAYS_OF_WEEK = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
-        // ⚠️ تعريف خريطة الشهور للتوافق مع دالة التقرير الشهري
-        const MONTH_MAP = {
-            "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5, 
-            "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11
-        };
-
         // ----------------------------------------------------------------
         // 3. دوال مساعدة
         // ----------------------------------------------------------------
         
         /**
-         * 🎯 الدالة التي تضمن إرسال التاريخ بالتنسيق الصحيح للتقرير الشهري.
-         * التنسيق الناتج: "26 نوفمبر 2025 – 09:30 ص"
+         * 🎯 NEW: ترسل التاريخ كرقم (Timestamp) لضمان الدقة في تقرير المدير.
+         */
+        function getCurrentTimestamp() {
+            return firebase.firestore.Timestamp.now(); 
+        }
+
+        /**
+         * التنسيق الناتج: "26 نوفمبر 2025 – 09:30 ص" (لرسالة الواتساب فقط).
          */
         function getCurrentDateTime() {
             const now = new Date();
-            // يجب استخدام 'ar-EG' للحصول على أسماء الشهور العربية المطلوبة في دالة parseRegistrationDate
             const date = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
             const time = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
             return `${date} – ${time}`; 
@@ -273,10 +272,11 @@
 
 
         // ----------------------------------------------------------------
-        // 4. وظيفة الحفظ في Firebase
+        // 4. وظيفة الحفظ في Firebase (مُعدَّلة)
         // ----------------------------------------------------------------
         async function saveToFirebase(data) {
-            const { volunteerName, day, status, reason, registrationTime } = data; 
+            // ⚠️ استلام الحقل الجديد
+            const { volunteerName, day, status, reason, registrationTime, registrationDateTimestamp } = data; 
             
             const docId = `${volunteerName}_${day}`; 
             
@@ -286,7 +286,8 @@
                     day,
                     status,
                     reason,
-                    registrationTime // هذا الحقل هو مصدر التاريخ للتقرير الشهري
+                    registrationTime, // يُبقى للتوثيق والواتساب
+                    registrationDateTimestamp // 🎯 الحقل الجديد لضمان عمل التقرير
                 });
                 return true;
             } catch (e) {
@@ -297,7 +298,7 @@
 
 
         // ----------------------------------------------------------------
-        // 5. معالجة إرسال النموذج
+        // 5. معالجة إرسال النموذج (مُعدَّلة)
         // ----------------------------------------------------------------
         document.getElementById('attendanceForm').addEventListener('submit', async function(event) {
             event.preventDefault();
@@ -320,7 +321,10 @@
             }
             
             const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
-            const registrationTime = getCurrentDateTime(); // جلب التاريخ بالتنسيق الصحيح
+            
+            // 🎯 جلب التاريخ بصيغة نصية ورقمية
+            const registrationTime = getCurrentDateTime(); 
+            const registrationDateTimestamp = getCurrentTimestamp(); 
             
             if (!volunteerName) {
                 statusDiv.className = 'status-error';
@@ -350,7 +354,14 @@
             let saveSuccess = true;
             
             for (const day of selectedDays) {
-                const data = { volunteerName, day, status, reason, registrationTime }; 
+                const data = { 
+                    volunteerName, 
+                    day, 
+                    status, 
+                    reason, 
+                    registrationTime,
+                    registrationDateTimestamp // 🎯 إرسال التاريخ الرقمي
+                }; 
                 const result = await saveToFirebase(data);
                 if (!result) {
                     saveSuccess = false;
