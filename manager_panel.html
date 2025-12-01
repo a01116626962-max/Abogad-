@@ -155,9 +155,9 @@
 </div>
 
 <script>
-    // ⚠️ مفاتيح Firebase الخاصة بمشروعك العامل (rdtt-15cbe) - نفس المفاتيح
+    // ⚠️ مفاتيح Firebase الخاصة بمشروعك العامل (rdtt-15cbe) - تأكد من صحتها
     const firebaseConfig = {
-        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", // تأكد من صحة هذا المفتاح
         authDomain: "rdtt-15cbe.firebaseapp.com",
         projectId: "rdtt-15cbe",
         storageBucket: "rdtt-15cbe.firebasestorage.app",
@@ -200,32 +200,44 @@
     let selectedDay = null;
     let currentAttendanceList = [];
     
-    // ✅ المتغير لتخزين بيانات التقرير الشهري لغرض النسخ
     let finalMonthlyReportData = {
         cycleDisplay: '',
-        data: {} // { name: { expected: N, attended: N, apologies: N, absence: N }, ... }
+        data: {} 
     };
 
     const JS_DAY_MAP = {
         0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت"
     };
 
+    // ⚠️ خريطة الشهور المحدثة (للتأكد من التوافق)
     const MONTH_MAP = {
         "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5, 
-        "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11
+        "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11,
+        "ينايـر": 0, "فبرايـر": 1, "مـارس": 2, "إبريـل": 3, "مايـو": 4, "يونيـو": 5, // صيغ مختلفة
+        "يوليـو": 6, "أغسطـس": 7, "سبتمبـر": 8, "أكتوبـر": 9, "نوفمبـر": 10, "ديسمبـر": 11 
     };
 
+    // 🎯 دالة تحليل التاريخ المحدثة بزيادة المرونة
     function parseRegistrationDate(timeString) {
-        const datePart = timeString.split(' – ')[0];
+        if (!timeString) return null;
+        
+        // 1. استخراج جزء التاريخ فقط وإزالة أي مسافات زائدة
+        const datePart = timeString.split(' – ')[0].trim();
         const parts = datePart.split(' ');
         
         if (parts.length < 3) return null;
         
         const day = parseInt(parts[0]);
-        const month = MONTH_MAP[parts[1]];
+        // 2. تنظيف اسم الشهر وإزالة علامات الاتجاه أو أي مسافات غير مرئية
+        const monthName = parts[1].trim().replace(/[\u200e\u200f\s]/g, ''); 
+        const month = MONTH_MAP[monthName];
         const year = parseInt(parts[2]);
 
-        if (isNaN(day) || month === undefined || isNaN(year)) return null;
+        if (isNaN(day) || month === undefined || isNaN(year)) {
+             // إذا فشل التحليل، نطبع بيانات السجل المسبب للمشكلة
+             console.error("❌ فشل في تحليل التاريخ:", datePart, { day, month, year, monthName, originalMonth: parts[1] });
+             return null;
+        }
         
         const date = new Date(year, month, day);
         date.setHours(0, 0, 0, 0); 
@@ -254,7 +266,6 @@
                     currentAttendanceData[name] = {};
                 }
                 
-                // نفترض أن Firebase يخزن السجل الأخير عند التحديث، وهو ما يلغي الاعتذار في حال تسجيل حضور لاحق
                 currentAttendanceData[name][day] = { 
                     status: data.status, 
                     reason: data.reason,
@@ -278,6 +289,7 @@
     // 3. وظيفة عرض تفاصيل اليوم 
     // ----------------------------------------------------------------
     function viewDay(day) {
+        // ... (هذه الدالة لم تتغير ولم تكن مصدر المشكلة)
         const dayDetailsDiv = document.getElementById('day-details');
         
         document.querySelectorAll('.day-buttons button').forEach(btn => btn.classList.remove('active'));
@@ -329,7 +341,6 @@
                 }
             }
             
-            // لتحديد من يجب أن يكون في قائمة الواتساب
             const isAttending = (isFixed && (!recordedStatus || recordedStatus.status !== 'اعتذار')) || 
                                 (recordedStatus && recordedStatus.status === 'حضور');
 
@@ -365,10 +376,12 @@
 
         let startDate, endDate;
 
+        // إذا كان اليوم <= 25، نستخدم الشهر السابق
         if (today.getDate() <= 25) {
             startDate = new Date(today.getFullYear(), today.getMonth() - 1, 26);
             endDate = new Date(today.getFullYear(), today.getMonth(), 25);
         } else {
+            // إذا كان اليوم > 25، نستخدم الشهر الحالي
             startDate = new Date(today.getFullYear(), today.getMonth(), 26);
             endDate = new Date(today.getFullYear(), today.getMonth() + 1, 25);
         }
@@ -418,9 +431,9 @@
         VOLUNTEER_NAMES_ORDERED.forEach(name => {
             CLEAN_REPORT[name] = { 
                 expected: 0, 
-                attended: 0, // الإجمالي: (المجدول الافتراضي + الحضور الصريح)
-                apologies: 0, // إجمالي الاعتذارات
-                absence: 0 // الغياب المجدول
+                attended: 0, 
+                apologies: 0, 
+                absence: 0 
             };
         });
 
@@ -431,8 +444,9 @@
         snapshot.docs.forEach(doc => {
             const data = doc.data();
             const name = data.volunteerName;
-            const recordDate = parseRegistrationDate(data.registrationTime);
+            const recordDate = parseRegistrationDate(data.registrationTime); // 🎯 هنا يتم استخدام الدالة المحدثة
             
+            // التحقق من نطاق التاريخ
             if (recordDate && recordDate >= cycle.startDate && recordDate <= cycle.endDate) {
                 const dateKey = recordDate.toDateString(); 
                 
@@ -440,12 +454,12 @@
                     attendanceMap.set(name, new Map());
                 }
                 
-                // نفترض أن هذا يمثل أحدث حالة مسجلة لليوم (حضور يلغي اعتذار سابق)
+                // حفظ الحالة الأخيرة المسجلة لليوم (حضور/اعتذار)
                 attendanceMap.get(name).set(dateKey, data.status);
             }
         });
         
-        // 2. تطبيق منطق الحساب اليومي (وهو الأهم)
+        // 2. تطبيق منطق الحساب اليومي 
         cycleDays.forEach(dayInfo => {
             const dateKey = dayInfo.date.toDateString();
             const dayArabic = dayInfo.day;
@@ -459,43 +473,36 @@
                 if (isFixed) {
                     report.expected++;
                 }
-
-                // ب. تحديد الحالة النهائية لليوم (الحضور الافتراضي / الصريح)
                 
-                let finalDayResult = 'absence_scheduled'; // افتراض أولي للغياب المجدول
-                
-                if (status === 'حضور') {
-                    // 1. حالة تسجيل حضور صريح (سواء كان مجدولاً أم لا)
-                    finalDayResult = 'attended_count';
-                } else if (status === 'اعتذار') {
-                    // 2. حالة تسجيل اعتذار صريح
-                    finalDayResult = 'apology_count';
-                } else if (isFixed) {
-                    // 3. حالة مجدول ولا يوجد تسجيل (الافتراض: حضور)
-                    finalDayResult = 'attended_count';
-                } else {
-                    // 4. حالة غير مجدول ولا يوجد تسجيل (يتم تجاهل اليوم)
-                    finalDayResult = 'ignored';
-                }
-                
-                // ج. تجميع الإحصائيات النهائية
-                if (finalDayResult === 'attended_count') {
+                // ب. حساب الإحصائيات (الحضور المحتسب، الاعتذار، الغياب)
+                if (isFixed) {
+                    if (status === 'حضور') {
+                        // مجدول وسجل حضور صريح
+                        report.attended++;
+                    } else if (status === 'اعتذار') {
+                        // مجدول وسجل اعتذار صريح
+                        report.apologies++;
+                    } else {
+                        // مجدول ولم يسجل (حضور افتراضي)
+                        report.attended++;
+                    }
+                } else if (!isFixed && status === 'حضور') {
+                    // غير مجدول ولكنه سجل حضور صريح
                     report.attended++;
-                } else if (finalDayResult === 'apology_count') {
-                    report.apologies++;
+                } else if (!isFixed && status === 'اعتذار') {
+                    // غير مجدول وسجل اعتذار صريح (هذا لا يؤثر على الغياب لكن يحسب كاعتذار مسجل)
+                    report.apologies++; 
                 }
             });
         });
 
-        // 3. حساب الغياب المجدول (absence): المتوقع - الحضور - الاعتذار (لأن الحضور هنا يشمل الافتراضي)
+        // 3. إعادة حساب الغياب المجدول بدقة: المتوقع - (الحضور الافتراضي والمؤكد) - (الاعتذار المجدول)
+        // لا نحتاج لإعادة الحساب، المنطق أعلاه يقوم بحساب الحضور (attended) والاعتذار (apologies) *بشكل مستقل* عن كونهم مجدولين أم لا.
+        // لكن لحساب الغياب، يجب أن نفترض أن الغياب يحدث فقط للأيام المتوقعة.
+
         VOLUNTEER_NAMES_ORDERED.forEach(name => {
             const report = CLEAN_REPORT[name];
             
-            // نحتاج فقط الحضور والاعتذار *من الأيام المجدولة* لحساب الغياب
-            // بما أن المنطق أعلاه يحسب الحضور الافتراضي للمجدول، فإننا نحتاج لفلترة الحضور لليوم غير المجدول
-            
-            // لإزالة الحضور غير المجدول من العدد الإجمالي لـ 'attended' و 'apologies' لحساب الغياب الدقيق:
-            // أفضل طريقة هي إعادة حساب الحضور والاعتذار للمجدول فقط:
             let scheduledPresent = 0;
             let scheduledApology = 0;
             
@@ -503,7 +510,7 @@
                 const dateKey = dayInfo.date.toDateString();
                 const dayArabic = dayInfo.day;
 
-                if (FIXED_VOLUNTEERS[name].includes(dayArabic)) {
+                if (FIXED_VOLUNTEERS[name].includes(dayArabic)) { // هل هو مجدول في هذا اليوم؟
                     const status = attendanceMap.get(name)?.get(dateKey);
 
                     if (status === 'حضور' || status === undefined) {
@@ -518,8 +525,12 @@
 
             // الغياب المجدول = المتوقع - (الحضور المجدول) - (الاعتذار المجدول)
             report.absence = report.expected - scheduledPresent - scheduledApology;
+            
+            // في حالة الأيام المتوقعة صفر، يجب أن يكون الغياب صفر
+            if (report.expected === 0) {
+                 report.absence = 0;
+            }
         });
-
 
         // ✅ تخزين البيانات في المتغير العام للنسخ
         finalMonthlyReportData.cycleDisplay = cycle.display;
@@ -571,7 +582,6 @@
 
     /**
      * وظيفة نسخ محتوى جدول التقرير الشهري إلى الحافظة
-     * ✅ تم التحديث لينسخ الاسم + الحضور المحتسب فقط
      */
     function copyMonthlyTableContent() {
         if (!finalMonthlyReportData.data || Object.keys(finalMonthlyReportData.data).length === 0) {
@@ -582,20 +592,16 @@
         const cycleDisplay = finalMonthlyReportData.cycleDisplay;
         const reportData = finalMonthlyReportData.data;
         
-        // 1. العنوان والفاصل
         let textToCopy = `تقرير الحضور الشهري للفترة ${cycleDisplay}\n\n`;
         textToCopy += '------------------------------------------\n';
         
-        // 2. إضافة بيانات المتطوعين: الاسم + الحضور المحتسب فقط
         VOLUNTEER_NAMES_ORDERED.forEach(name => {
             const report = reportData[name];
             if (report) {
-                // [الاسم]  [الحضور المحتسب] أيام
                 textToCopy += `${name}\t${report.attended} أيام\n`;
             }
         });
 
-        // نسخ إلى الحافظة
         navigator.clipboard.writeText(textToCopy.trim())
             .then(() => {
                 alert(`✅ تم نسخ التقرير الشهري بنجاح!`);
@@ -607,7 +613,7 @@
     }
 
     // ----------------------------------------------------------------
-    // 4. وظائف الواتساب (كما هي)
+    // 4. وظائف الواتساب 
     // ----------------------------------------------------------------
 
     function getTomorrowDateString() {
