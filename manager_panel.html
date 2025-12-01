@@ -145,32 +145,32 @@
     const db = firebase.firestore();
     
     // ----------------------------------------------------------------
-    // 1. الإعدادات الثابتة والمجدولة (ترتيب الأسماء الأصلي)
+    // 1. الإعدادات الثابتة والمجدولة 
     // ----------------------------------------------------------------
-    // لم نعد نستخدم رقم المشرف لأنه سيتم إرسال الرسالة إلى جهة يتم اختيارها لاحقًا
     const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
     const ALL_WORKING_DAYS = WORKING_DAYS; 
 
-    // جدول المتطوعين الثابت
+    // ✅ الجدول الثابت المحدث بالترتيب القديم والقيم الجديدة
     const FIXED_VOLUNTEERS = {
-        // الترتيب:
-        "أحمد": ALL_WORKING_DAYS.filter(day => day !== "الثلاثاء" && day !== "الأربعاء"),
+        "أحمد": ALL_WORKING_DAYS,
         "هدير": ALL_WORKING_DAYS,
         "محمد إبراهيم": ALL_WORKING_DAYS,
-        "محمد عبدالحميد": ALL_WORKING_DAYS.filter(day => day !== "الأحد"),
-        "سامى": ["السبت", "الأحد", "الثلاثاء"], // ✅ الاسم مُعدّل الآن
+        "محمد عبدالحميد": ALL_WORKING_DAYS,
+        "سامى": ["السبت", "الأحد", "الثلاثاء"], 
         "ممتاز": ALL_WORKING_DAYS,
         "حبيبة": ALL_WORKING_DAYS,
-        "ساندي": ["السبت", "الأحد", "الأربعاء"],
-        "رحاب": ["السبت", "الإثنين", "الثلاثاء"],
-        "معاذ": ["الأحد", "الثلاثاء", "الخميس"],
-        "يوسف": ALL_WORKING_DAYS.filter(day => day !== "الثلاثاء" && day !== "الأربعاء"),
+        "ساندي": [],
+        "رحاب": ["السبت", "الإثنين", "الثلاثاء"], 
+        "معاذ": ["الأحد", "الثلاثاء", "الخميس"], 
+        "مازن": ALL_WORKING_DAYS,
+        "يوسف": [],
         "إبراهيم": ALL_WORKING_DAYS,
-        "مروان": ALL_WORKING_DAYS,
-        "عبدالرحمن": ALL_WORKING_DAYS.filter(day => day !== "الإثنين" && day !== "الخميس")
+        "مروان": [],
+        "عبدالرحمن": [],
+        "معتز": ALL_WORKING_DAYS 
     };
     
-    // استخراج أسماء المتطوعين بالترتيب المحدد أعلاه
+    // استخراج أسماء المتطوعين بالترتيب القديم
     const VOLUNTEER_NAMES_ORDERED = Object.keys(FIXED_VOLUNTEERS);
     
     let currentAttendanceData = {}; 
@@ -248,7 +248,8 @@
         let finalAttendanceList = []; 
         
         VOLUNTEER_NAMES_ORDERED.forEach(name => {
-            const isFixed = FIXED_VOLUNTEERS[name].includes(day);
+            // التحقق من وجود المتطوع في الجدول الثابت
+            const isFixed = FIXED_VOLUNTEERS[name] && FIXED_VOLUNTEERS[name].includes(day);
             const recordedStatus = currentAttendanceData[name] && currentAttendanceData[name][day];
 
             let displayStatus;
@@ -303,6 +304,15 @@
         updateStaticWhatsAppButton(day, finalAttendanceList);
     }
     
+    // وظيفة لتوليد تاريخ الغد
+    function getTomorrowDateString() {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1); // إضافة يوم واحد
+        
+        const dateString = tomorrow.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+        return dateString;
+    }
+
     // وظيفة تحديث حالة الزر الثابت
     function updateStaticWhatsAppButton(day, list) {
         const staticButton = document.getElementById('static-whatsapp-button');
@@ -327,8 +337,8 @@
         const day = selectedDay;
         const attendanceList = currentAttendanceList;
         
-        const now = new Date();
-        const dateString = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+        // استخدام تاريخ الغد
+        const dateString = getTomorrowDateString(); 
         
         let listText = attendanceList.map((name, index) => `${index + 1}. ${name}`).join('\n');
         
@@ -336,10 +346,11 @@
             listText = "لا يوجد حضور مؤكد لهذا اليوم.";
         }
         
-        // 🌟 تم تعديل الرسالة لتطابق الصيغة المطلوبة 🌟
+        // ✅ تم إزالة علامات النجمة
         const message = `
 📌 قائمة الحضور اليومية
 🗓️ اليوم : ${day} - ${dateString}
+🕒 معاد الشغل: ٣ العصر
 👥 إجمالي المتطوعين : ${attendanceList.length}
 
 ---
