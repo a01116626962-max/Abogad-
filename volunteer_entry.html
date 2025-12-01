@@ -6,6 +6,7 @@
     <title>تسجيل حضور المتطوعين</title>
     
     <style>
+        /* الأنماط لم يتم تغييرها */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f4f4f9;
@@ -130,7 +131,7 @@
                 <textarea id="reason" rows="3" placeholder="اذكر سبب اعتذارك بالتفصيل..."></textarea>
 
                 <div id="lateReasonContainer" style="display:none;">
-                    <label for="lateReason">سبب تأخر الاعتذار:</label>
+                    <label for="lateReason">سبب تأخر الاعتذار (مهم عند اعتذار ليوم حالي):</label>
                     <textarea id="lateReason" rows="2" placeholder="اذكر سبب تأخرك في الإبلاغ..."></textarea>
                 </div>
             </div>
@@ -174,19 +175,34 @@
             "إبراهيم", "مروان", "عبدالرحمن", "معتز" 
         ];
         
+        // الأحد هو 0، السبت هو 6 في JavaScript
         const DAYS_OF_WEEK = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+
+        // ⚠️ تعريف خريطة الشهور للتوافق مع دالة التقرير الشهري
+        const MONTH_MAP = {
+            "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5, 
+            "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11
+        };
 
         // ----------------------------------------------------------------
         // 3. دوال مساعدة
         // ----------------------------------------------------------------
         
+        /**
+         * 🎯 الدالة التي تضمن إرسال التاريخ بالتنسيق الصحيح للتقرير الشهري.
+         * التنسيق الناتج: "26 نوفمبر 2025 – 09:30 ص"
+         */
         function getCurrentDateTime() {
             const now = new Date();
+            // يجب استخدام 'ar-EG' للحصول على أسماء الشهور العربية المطلوبة في دالة parseRegistrationDate
             const date = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
             const time = now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: true });
-            return `${date} – ${time}`;
+            return `${date} – ${time}`; 
         }
 
+        /**
+         * تحدد ما إذا كان اليوم الحالي هو أحد الأيام المحددة في خانات الاختيار.
+         */
         function isCurrentDaySelected() {
             const now = new Date();
             const currentDayIndex = now.getDay(); 
@@ -198,12 +214,15 @@
             return selectedDays.includes(currentDayArabic);
         }
         
+        /**
+         * تتحكم في ظهور وإخفاء حقول السبب
+         */
         function toggleReasonField() {
             const status = document.getElementById('status').value;
             const reasonField = document.getElementById('reasonField');
             const reasonInput = document.getElementById('reason');
             const lateReasonContainer = document.getElementById('lateReasonContainer');
-            const lateReasonInput = document.getElementById('lateReason'); // ⚠️ تم جلب الحقل الجديد
+            const lateReasonInput = document.getElementById('lateReason');
 
             if (status === 'اعتذار') {
                 reasonField.style.display = 'block';
@@ -211,17 +230,20 @@
 
                 if (isCurrentDaySelected()) {
                     lateReasonContainer.style.display = 'block';
-                    lateReasonInput.required = true; // ⚠️ جعل الحقل إجباريًا عند الظهور
+                    lateReasonInput.required = true; 
                 } else {
                     lateReasonContainer.style.display = 'none';
-                    lateReasonInput.required = false; // إلغاء الإجبار عند الإخفاء
+                    lateReasonInput.required = false; 
+                    lateReasonInput.value = ''; 
                 }
 
             } else {
                 reasonField.style.display = 'none';
                 reasonInput.required = false;
+                
                 lateReasonContainer.style.display = 'none';
-                lateReasonInput.required = false; // إلغاء الإجبار
+                lateReasonInput.required = false;
+                lateReasonInput.value = ''; 
             }
         }
         
@@ -246,7 +268,7 @@
                 daysContainer.appendChild(dayLabel);
             });
             
-            toggleReasonField();
+            toggleReasonField(); 
         }
 
 
@@ -264,7 +286,7 @@
                     day,
                     status,
                     reason,
-                    registrationTime 
+                    registrationTime // هذا الحقل هو مصدر التاريخ للتقرير الشهري
                 });
                 return true;
             } catch (e) {
@@ -282,25 +304,23 @@
 
             const volunteerName = document.getElementById('volunteerName').value;
             const status = document.getElementById('status').value;
-            const reason = document.getElementById('reason').value.trim(); // لا يوجد قيمة افتراضية هنا لأن الحقل إجباري عند الظهور
+            const reason = document.getElementById('reason').value.trim(); 
             
-            // جلب قيمة سبب التأخر
             let lateReason = ""; 
             const lateReasonContainer = document.getElementById('lateReasonContainer');
             const lateReasonInput = document.getElementById('lateReason');
 
             if (lateReasonContainer.style.display !== 'none') {
                 lateReason = lateReasonInput.value.trim();
-                // ✅ إضافة تحقق إجباري لسبب التأخر
                 if (!lateReason) {
                     statusDiv.className = 'status-error';
-                    statusDiv.textContent = 'الرجاء كتابة سبب تأخر الاعتذار.';
+                    statusDiv.textContent = 'الرجاء كتابة سبب تأخر الاعتذار حيث أنه ليوم حالي.';
                     return;
                 }
             }
             
             const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
-            const registrationTime = getCurrentDateTime();
+            const registrationTime = getCurrentDateTime(); // جلب التاريخ بالتنسيق الصحيح
             
             if (!volunteerName) {
                 statusDiv.className = 'status-error';
@@ -330,7 +350,6 @@
             let saveSuccess = true;
             
             for (const day of selectedDays) {
-                // نرسل الحقول المطلوبة لـ Firebase
                 const data = { volunteerName, day, status, reason, registrationTime }; 
                 const result = await saveToFirebase(data);
                 if (!result) {
@@ -367,7 +386,6 @@
                 message += `
 سبب الاعتذار: ${reason}
 `;
-                // إضافة سبب تأخر الإبلاغ إذا كان موجوداً
                 if (lateReason) { 
                     message += `
 سبب تأخر الإبلاغ: ${lateReason}
