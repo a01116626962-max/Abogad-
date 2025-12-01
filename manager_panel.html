@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>جدول الحضور اليومي</title>
     <style>
-        /* ... (CSS remains the same) ... */
+        /* الأنماط (CSS) */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f4f4f9;
@@ -155,8 +155,9 @@
 </div>
 
 <script>
+    // ⚠️ مفاتيح Firebase الخاصة بمشروعك العامل (rdtt-15cbe) - تأكد من صحتها
     const firebaseConfig = {
-        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", // تأكد من صحة هذا المفتاح
+        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
         projectId: "rdtt-15cbe",
         storageBucket: "rdtt-15cbe.firebasestorage.app",
@@ -164,9 +165,13 @@
         appId: "1:219502671343:web:b289b11869e25c9a30321a"
     };
 
+    // تهيئة Firebase والوصول إلى Firestore
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     
+    // ----------------------------------------------------------------
+    // 1. الإعدادات الثابتة والمجدولة 
+    // ----------------------------------------------------------------
     const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
     const ALL_WORKING_DAYS = WORKING_DAYS; 
 
@@ -190,8 +195,8 @@
     const JS_DAY_MAP = {
         0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت"
     };
-    
-    // ⚠️ دالة تحليل التاريخ النصي لم تعد تستخدم للفلترة، لكنها مطلوبة للأيام القديمة التي لم تخزن الـ Timestamp
+
+    // خريطة الشهور (لتحليل السجلات القديمة فقط)
     const MONTH_MAP = {
         "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5, 
         "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11,
@@ -199,7 +204,7 @@
         "يوليـو": 6, "أغسطـس": 7, "سبتمبـر": 8, "أكتوبـر": 9, "نوفمبـر": 10, "ديسمبـر": 11 
     };
 
-    // ⚠️ تم إبقاء الدالة لاستقبال السجلات القديمة
+    // دالة تحليل التاريخ النصي (للسجلات القديمة فقط)
     function parseRegistrationDate(timeString) {
         if (!timeString) return null;
         const datePart = timeString.split(' – ')[0].trim();
@@ -215,221 +220,9 @@
         return date;
     }
 
-
     // ----------------------------------------------------------------
-    // 2. وظيفة جلب البيانات من Firebase وتحديث الجدول 
+    // 2. وظيفة جلب البيانات من Firebase وتحديث الجدول (لم تتغير)
     // ----------------------------------------------------------------
-    // ... (fetchAttendanceData remains the same) ...
-
-
-    // ----------------------------------------------------------------
-    // 5. وظائف التقرير الشهري (منطق الحساب الجديد والمعقد)
-    // ----------------------------------------------------------------
-    
-    function getCurrentAttendanceCycle() {
-        const today = new Date();
-        let startDate, endDate;
-
-        if (today.getDate() <= 25) {
-            startDate = new Date(today.getFullYear(), today.getMonth() - 1, 26);
-            endDate = new Date(today.getFullYear(), today.getMonth(), 25);
-        } else {
-            startDate = new Date(today.getFullYear(), today.getMonth(), 26);
-            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 25);
-        }
-        
-        startDate.setHours(0, 0, 0, 0); 
-        endDate.setHours(23, 59, 59, 999); 
-
-        const dateFormatter = new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
-        const startStr = dateFormatter.format(startDate);
-        const endStr = dateFormatter.format(endDate);
-
-        return { 
-            startDate: startDate.getTime(), // 🎯 تحويل إلى رقم للمقارنة
-            endDate: endDate.getTime(),     // 🎯 تحويل إلى رقم للمقارنة
-            display: `${startStr} حتى ${endStr}`,
-            startDateObj: startDate // للإبقاء على كائن التاريخ لـ getDaysInCycle
-        };
-    }
-
-    function getDaysInCycle(start, end) {
-        const cycleDays = [];
-        let currentDate = new Date(start);
-        currentDate.setHours(0, 0, 0, 0); 
-        
-        // نستخدم endDate.startDateObj الذي يحتوي على كائن التاريخ
-        while (currentDate.getTime() <= end.getTime()) { 
-            const jsDayIndex = currentDate.getDay();
-            const arabicDay = JS_DAY_MAP[jsDayIndex];
-
-            if (WORKING_DAYS.includes(arabicDay)) {
-                cycleDays.push({
-                    date: new Date(currentDate), 
-                    day: arabicDay 
-                });
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-        return cycleDays;
-    }
-    
-    async function calculateMonthlyAttendance() {
-        const monthlyReportArea = document.getElementById('monthly-report-area');
-        monthlyReportArea.innerHTML = '<p style="color:#007bff;">جاري جلب وفلترة السجلات التاريخية لحساب التقرير...</p>';
-
-        const cycle = getCurrentAttendanceCycle();
-        // 🎯 نستخدم startDateObj لـ getDaysInCycle
-        const cycleDays = getDaysInCycle(cycle.startDateObj, cycle.endDateObj); 
-        
-        const CLEAN_REPORT = {};
-        VOLUNTEER_NAMES_ORDERED.forEach(name => {
-            CLEAN_REPORT[name] = { expected: 0, attended: 0, apologies: 0, absence: 0 };
-        });
-
-        // 1. جلب البيانات وتجميعها
-        const snapshot = await db.collection("user_attendance").get();
-        const attendanceMap = new Map();
-        
-        snapshot.docs.forEach(doc => {
-            const data = doc.data();
-            const name = data.volunteerName;
-            
-            // 🎯 الأولوية لاستخدام Timestamp
-            let recordTimeMs;
-            if (data.registrationDateTimestamp && typeof data.registrationDateTimestamp.toDate === 'function') {
-                recordTimeMs = data.registrationDateTimestamp.toDate().getTime();
-            } else {
-                // إذا لم يكن موجوداً (سجل قديم)، نعود لتحليل النص العربي
-                const recordDate = parseRegistrationDate(data.registrationTime);
-                if (recordDate) recordTimeMs = recordDate.getTime();
-            }
-
-            if (recordTimeMs && recordTimeMs >= cycle.startDate && recordTimeMs <= cycle.endDate) { // 🎯 المقارنة بالأرقام
-                const recordDate = new Date(recordTimeMs);
-                const dateKey = recordDate.toDateString(); 
-                
-                if (!attendanceMap.has(name)) {
-                    attendanceMap.set(name, new Map());
-                }
-                
-                attendanceMap.get(name).set(dateKey, data.status);
-            }
-        });
-        
-        // 2. تطبيق منطق الحساب اليومي 
-        cycleDays.forEach(dayInfo => {
-            const dateKey = dayInfo.date.toDateString();
-            const dayArabic = dayInfo.day;
-            
-            VOLUNTEER_NAMES_ORDERED.forEach(name => {
-                const isFixed = FIXED_VOLUNTEERS[name].includes(dayArabic);
-                const status = attendanceMap.get(name)?.get(dateKey); 
-                const report = CLEAN_REPORT[name];
-
-                if (isFixed) {
-                    report.expected++;
-                }
-
-                if (isFixed) {
-                    if (status === 'حضور') {
-                        report.attended++;
-                    } else if (status === 'اعتذار') {
-                        report.apologies++;
-                    } else { // مجدول ولم يسجل (حضور افتراضي)
-                        report.attended++;
-                    }
-                } else if (!isFixed && status === 'حضور') { // غير مجدول وسجل حضور صريح
-                    report.attended++;
-                } else if (!isFixed && status === 'اعتذار') { // غير مجدول وسجل اعتذار
-                    report.apologies++; 
-                }
-            });
-        });
-
-        // 3. إعادة حساب الغياب المجدول بدقة
-        VOLUNTEER_NAMES_ORDERED.forEach(name => {
-            const report = CLEAN_REPORT[name];
-            
-            let scheduledPresent = 0;
-            let scheduledApology = 0;
-            
-            cycleDays.forEach(dayInfo => {
-                const dateKey = dayInfo.date.toDateString();
-                const dayArabic = dayInfo.day;
-
-                if (FIXED_VOLUNTEERS[name].includes(dayArabic)) {
-                    const status = attendanceMap.get(name)?.get(dateKey);
-
-                    if (status === 'حضور' || status === undefined) {
-                        scheduledPresent++;
-                    } else if (status === 'اعتذار') {
-                        scheduledApology++;
-                    }
-                }
-            });
-
-            report.absence = report.expected - scheduledPresent - scheduledApology;
-            
-            if (report.expected === 0) {
-                 report.absence = 0;
-            }
-        });
-
-
-        // 4. عرض النتائج 
-        // ... (عرض النتائج وجدول HTML كما في الكود السابق) ...
-        finalMonthlyReportData.cycleDisplay = cycle.display;
-        finalMonthlyReportData.data = CLEAN_REPORT;
-
-        let tableHTML = `
-            <h3>تقرير الحضور (الحساب وفقاً لقواعد العمل)</h3>
-            <div class="monthly-summary">
-                <p>تم الحساب بناءً على قاعدة **"المجدول حاضر ما لم يعتذر، والحضور الصريح يحسب دائماً"** للفترة:</p>
-                <p>📅 **${cycle.display}**</p>
-                <div class="action-buttons" style="margin-bottom: 0;">
-                    <button id="copy-monthly-button" onclick="copyMonthlyTableContent()"> نسخ التقرير (الحضور المحتسب فقط) </button>
-                </div>
-            </div>
-            
-            <table class="monthly-table">
-                <thead>
-                    <tr>
-                        <th>الاسم</th>
-                        <th>الأيام المتوقعة (مجدول)</th>
-                        <th>الحضور المحتسب (الفعلي + الافتراضي)</th>
-                        <th>الاعتذار المسجل (الفعلي)</th>
-                        <th>الغياب المجدول*</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        
-        VOLUNTEER_NAMES_ORDERED.forEach(name => {
-            const report = CLEAN_REPORT[name];
-            
-            tableHTML += `
-                <tr>
-                    <td>${name}</td>
-                    <td>${report.expected} أيام</td>
-                    <td class="status-present">${report.attended} أيام</td>
-                    <td class="status-absent">${report.apologies} أيام</td>
-                    <td>${report.absence} أيام</td>
-                </tr>
-            `;
-        });
-
-        tableHTML += `</tbody></table>`;
-        
-        monthlyReportArea.innerHTML = tableHTML;
-    }
-    
-    // ... (باقي الدوال: fetchAttendanceData, viewDay, copyMonthlyTableContent, WhatsApp functions) ...
-    // ... (يجب نسخهم من الكود السابق، باستثناء الدوال التي تم تعديلها أعلاه) ...
-    
-    // ... (بقية الكود)
-
-    // ... (fetchAttendanceData - يجب أن تنسخها بالكامل هنا لتكتمل) ...
     async function fetchAttendanceData() {
         const resultArea = document.getElementById('result-area');
         resultArea.style.display = 'block';
@@ -452,7 +245,7 @@
                 currentAttendanceData[name][day] = { 
                     status: data.status, 
                     reason: data.reason,
-                    registrationTime: data.registrationTime 
+                    registrationTime: data.registrationTime // نص التاريخ
                 };
             });
 
@@ -468,7 +261,11 @@
         }
     }
 
+    // ----------------------------------------------------------------
+    // 3. وظيفة عرض تفاصيل اليوم (لم تتغير)
+    // ----------------------------------------------------------------
     function viewDay(day) {
+        // ... (كود عرض تفاصيل اليوم) ...
         const dayDetailsDiv = document.getElementById('day-details');
         
         document.querySelectorAll('.day-buttons button').forEach(btn => btn.classList.remove('active'));
@@ -545,6 +342,225 @@
         updateStaticWhatsAppButton(day, finalAttendanceList);
     }
     
+    // ----------------------------------------------------------------
+    // 5. وظائف التقرير الشهري (منطق الحساب الجديد والمعدل)
+    // ----------------------------------------------------------------
+    
+    function getCurrentAttendanceCycle() {
+        const today = new Date();
+        let startDate, endDate;
+
+        // إذا كان اليوم <= 25، نستخدم الشهر السابق
+        if (today.getDate() <= 25) {
+            startDate = new Date(today.getFullYear(), today.getMonth() - 1, 26);
+            endDate = new Date(today.getFullYear(), today.getMonth(), 25);
+        } else {
+            // إذا كان اليوم > 25، نستخدم الشهر الحالي
+            startDate = new Date(today.getFullYear(), today.getMonth(), 26);
+            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 25);
+        }
+        
+        // إعادة تعيين الوقت
+        startDate.setHours(0, 0, 0, 0); 
+        endDate.setHours(23, 59, 59, 999); 
+
+        const dateFormatter = new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+        const startStr = dateFormatter.format(startDate);
+        const endStr = dateFormatter.format(endDate);
+
+        return { 
+            startDate: startDate.getTime(), // رقم بالمللي ثانية
+            endDate: endDate.getTime(),     // رقم بالمللي ثانية
+            display: `${startStr} حتى ${endStr}`,
+            startDateObj: startDate, // كائن التاريخ
+            endDateObj: endDate      // كائن التاريخ
+        };
+    }
+
+    function getDaysInCycle(start, end) {
+        const cycleDays = [];
+        let currentDate = new Date(start);
+        currentDate.setHours(0, 0, 0, 0); 
+        
+        while (currentDate.getTime() <= end.getTime()) { 
+            const jsDayIndex = currentDate.getDay();
+            const arabicDay = JS_DAY_MAP[jsDayIndex];
+
+            if (WORKING_DAYS.includes(arabicDay)) {
+                cycleDays.push({
+                    date: new Date(currentDate), 
+                    day: arabicDay 
+                });
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return cycleDays;
+    }
+    
+    async function calculateMonthlyAttendance() {
+        const monthlyReportArea = document.getElementById('monthly-report-area');
+        monthlyReportArea.innerHTML = '<p style="color:#007bff;">جاري جلب وفلترة السجلات التاريخية لحساب التقرير...</p>';
+
+        try {
+            const cycle = getCurrentAttendanceCycle();
+            const cycleDays = getDaysInCycle(cycle.startDateObj, cycle.endDateObj); 
+            
+            const CLEAN_REPORT = {};
+            VOLUNTEER_NAMES_ORDERED.forEach(name => {
+                CLEAN_REPORT[name] = { expected: 0, attended: 0, apologies: 0, absence: 0 };
+            });
+
+            // 1. جلب البيانات وتجميعها
+            const snapshot = await db.collection("user_attendance").get();
+            const attendanceMap = new Map();
+            
+            snapshot.docs.forEach(doc => {
+                const data = doc.data();
+                const name = data.volunteerName;
+                
+                let recordTimeMs;
+                
+                // 🎯 نقطة الإصلاح: التحقق الآمن من حقل الـ Timestamp 
+                if (data.registrationDateTimestamp && typeof data.registrationDateTimestamp.toDate === 'function') {
+                    // سجل جديد مع Timestamp سليم
+                    recordTimeMs = data.registrationDateTimestamp.toDate().getTime();
+                } else if (data.registrationTime) {
+                    // سجل قديم يعتمد على تحليل النص العربي
+                    const recordDate = parseRegistrationDate(data.registrationTime);
+                    if (recordDate) recordTimeMs = recordDate.getTime();
+                }
+
+                if (recordTimeMs && recordTimeMs >= cycle.startDate && recordTimeMs <= cycle.endDate) {
+                    const recordDate = new Date(recordTimeMs);
+                    const dateKey = recordDate.toDateString(); 
+                    
+                    if (!attendanceMap.has(name)) {
+                        attendanceMap.set(name, new Map());
+                    }
+                    
+                    attendanceMap.get(name).set(dateKey, data.status);
+                }
+            });
+            
+            // 2. تطبيق منطق الحساب اليومي 
+            cycleDays.forEach(dayInfo => {
+                const dateKey = dayInfo.date.toDateString();
+                const dayArabic = dayInfo.day;
+                
+                VOLUNTEER_NAMES_ORDERED.forEach(name => {
+                    const isFixed = FIXED_VOLUNTEERS[name].includes(dayArabic);
+                    const status = attendanceMap.get(name)?.get(dateKey); 
+                    const report = CLEAN_REPORT[name];
+
+                    if (isFixed) {
+                        report.expected++;
+                    }
+
+                    // لا يوجد حاجة لحساب attended/apologies هنا
+                });
+            });
+
+            // 3. حساب الحضور والاعتذار والغياب بدقة
+            VOLUNTEER_NAMES_ORDERED.forEach(name => {
+                const report = CLEAN_REPORT[name];
+                
+                let scheduledPresent = 0;
+                let scheduledApology = 0;
+                let explicitPresent = 0;
+                let explicitApology = 0;
+                
+                cycleDays.forEach(dayInfo => {
+                    const dateKey = dayInfo.date.toDateString();
+                    const dayArabic = dayInfo.day;
+                    const status = attendanceMap.get(name)?.get(dateKey);
+
+                    if (FIXED_VOLUNTEERS[name].includes(dayArabic)) { // 1. مجدول
+                        if (status === 'حضور') {
+                            scheduledPresent++; // حضور صريح مجدول
+                        } else if (status === 'اعتذار') {
+                            scheduledApology++; // اعتذار صريح مجدول
+                        } else {
+                            scheduledPresent++; // حضور افتراضي مجدول (لم يسجل شيئاً)
+                        }
+                    } else { // 2. غير مجدول
+                        if (status === 'حضور') {
+                            explicitPresent++; // حضور صريح غير مجدول
+                        } else if (status === 'اعتذار') {
+                            explicitApology++; // اعتذار صريح غير مجدول
+                        }
+                    }
+                });
+
+                // الحضور المحتسب = (الحضور المجدول الافتراضي والمؤكد) + (الحضور غير المجدول المؤكد)
+                report.attended = scheduledPresent + explicitPresent; 
+                
+                // الاعتذار المسجل = (الاعتذار المجدول) + (الاعتذار غير المجدول)
+                report.apologies = scheduledApology + explicitApology;
+
+                // الغياب المجدول = المتوقع - (الحضور المجدول الفعلي والافتراضي) - (الاعتذار المجدول)
+                report.absence = report.expected - scheduledPresent - scheduledApology;
+                
+                if (report.expected === 0) {
+                     report.absence = 0;
+                }
+            });
+
+            // ✅ تخزين البيانات في المتغير العام للنسخ
+            finalMonthlyReportData.cycleDisplay = cycle.display;
+            finalMonthlyReportData.data = CLEAN_REPORT;
+
+
+            // 4. عرض النتائج + زر النسخ
+            let tableHTML = `
+                <h3>تقرير الحضور (الحساب وفقاً لقواعد العمل)</h3>
+                <div class="monthly-summary">
+                    <p>تم الحساب بناءً على قاعدة **"المجدول حاضر ما لم يعتذر، والحضور الصريح يحسب دائماً"** للفترة:</p>
+                    <p>📅 **${cycle.display}**</p>
+                    <div class="action-buttons" style="margin-bottom: 0;">
+                        <button id="copy-monthly-button" onclick="copyMonthlyTableContent()"> نسخ التقرير (الحضور المحتسب فقط) </button>
+                    </div>
+                </div>
+                
+                <table class="monthly-table">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الأيام المتوقعة (مجدول)</th>
+                            <th>الحضور المحتسب (الفعلي + الافتراضي)</th>
+                            <th>الاعتذار المسجل (الفعلي)</th>
+                            <th>الغياب المجدول*</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            VOLUNTEER_NAMES_ORDERED.forEach(name => {
+                const report = CLEAN_REPORT[name];
+                
+                tableHTML += `
+                    <tr>
+                        <td>${name}</td>
+                        <td>${report.expected} أيام</td>
+                        <td class="status-present">${report.attended} أيام</td>
+                        <td class="status-absent">${report.apologies} أيام</td>
+                        <td>${report.absence} أيام</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `</tbody></table>`;
+            
+            monthlyReportArea.innerHTML = tableHTML;
+            
+        } catch(error) {
+             monthlyReportArea.innerHTML = `<p class="status-absent">❌ **خطأ فادح في معالجة البيانات:** ${error.message}. يرجى مراجعة Console لمزيد من التفاصيل.</p>`;
+             console.error("Critical Error in Monthly Calculation:", error);
+        }
+    }
+
+    /**
+     * وظيفة نسخ محتوى جدول التقرير الشهري إلى الحافظة
+     */
     function copyMonthlyTableContent() {
         if (!finalMonthlyReportData.data || Object.keys(finalMonthlyReportData.data).length === 0) {
              alert('❌ الرجاء الضغط على "التقرير الشهري الدقيق" أولاً لحساب البيانات.');
@@ -573,6 +589,10 @@
                 alert('❌ فشل في نسخ التقرير. قد لا يدعم المتصفح هذه الميزة.');
             });
     }
+
+    // ----------------------------------------------------------------
+    // 4. وظائف الواتساب (لم تتغير)
+    // ----------------------------------------------------------------
 
     function getTomorrowDateString() {
         const tomorrow = new Date();
@@ -628,7 +648,7 @@ ${listText}
              sendButton.textContent = `📲 إرسال قائمة الحضور ليوم ${day} عبر واتساب (${attendanceList.length} متطوع)`;
         }, 5000);
     }
-
+    
     // عند تحميل الصفحة، اطلب البيانات أولاً
     window.onload = fetchAttendanceData;
 </script>
