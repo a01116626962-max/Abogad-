@@ -6,7 +6,6 @@
     <title>تسجيل حضور المتطوعين</title>
     
     <style>
-        /* الأنماط لم يتم تغييرها */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f4f4f9;
@@ -63,7 +62,7 @@
             display: block;
             width: 100%;
             padding: 15px;
-            background-color: #28a745; /* أخضر للإرسال */
+            background-color: #28a745;
             color: white;
             border: none;
             border-radius: 6px;
@@ -114,11 +113,10 @@
             <label for="volunteerName">الاسم:</label>
             <select id="volunteerName" required>
                 <option value="">اختر اسمك...</option>
-                </select>
+            </select>
 
             <label>الأيام التي ستأتي فيها (يمكن اختيار يوم أو أكثر):</label>
-            <div id="daysCheckboxes" class="days-container" onchange="toggleReasonField()">
-                </div>
+            <div id="daysCheckboxes" class="days-container" onchange="toggleReasonField()"></div>
 
             <label for="status">الحالة:</label>
             <select id="status" required onchange="toggleReasonField()">
@@ -148,9 +146,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script>
-        // ----------------------------------------------------------------
-        // 1. إعدادات Firebase
-        // ----------------------------------------------------------------
         const firebaseConfig = {
             apiKey: "AIzaSyCDJANXMfd6TR6R2ruLIi-xytlrB-LiCEs",
             authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -163,35 +158,20 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const statusDiv = document.getElementById('status-message');
-        
         const whatsappNumber = "201223314173"; 
 
-        // ----------------------------------------------------------------
-        // 2. قائمة الأسماء والأيام 
-        // ----------------------------------------------------------------
         const VOLUNTEER_NAMES = [
             "أحمد", "هدير", "محمد إبراهيم", "محمد عبدالحميد", "سامى", 
             "ممتاز", "حبيبة", "ساندي", "رحاب", "معاذ", "مازن", "يوسف", 
             "إبراهيم", "مروان", "عبدالرحمن", "معتز" 
         ];
-        
-        // الأحد هو 0، السبت هو 6 في JavaScript
+
         const DAYS_OF_WEEK = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
 
-        // ----------------------------------------------------------------
-        // 3. دوال مساعدة
-        // ----------------------------------------------------------------
-        
-        /**
-         * 🎯 NEW: ترسل التاريخ كرقم (Timestamp) لضمان الدقة في تقرير المدير.
-         */
         function getCurrentTimestamp() {
             return firebase.firestore.Timestamp.now(); 
         }
 
-        /**
-         * التنسيق الناتج: "26 نوفمبر 2025 – 09:30 ص" (لرسالة الواتساب فقط).
-         */
         function getCurrentDateTime() {
             const now = new Date();
             const date = now.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -199,12 +179,9 @@
             return `${date} – ${time}`; 
         }
 
-        /**
-         * تحدد ما إذا كان اليوم الحالي هو أحد الأيام المحددة في خانات الاختيار.
-         */
         function isCurrentDaySelected() {
             const now = new Date();
-            const currentDayIndex = now.getDay(); 
+            const currentDayIndex = now.getDay(); // 0 = الأحد
             const currentDayArabic = DAYS_OF_WEEK[currentDayIndex];
 
             const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
@@ -213,9 +190,6 @@
             return selectedDays.includes(currentDayArabic);
         }
         
-        /**
-         * تتحكم في ظهور وإخفاء حقول السبب
-         */
         function toggleReasonField() {
             const status = document.getElementById('status').value;
             const reasonField = document.getElementById('reasonField');
@@ -239,7 +213,6 @@
             } else {
                 reasonField.style.display = 'none';
                 reasonInput.required = false;
-                
                 lateReasonContainer.style.display = 'none';
                 lateReasonInput.required = false;
                 lateReasonInput.value = ''; 
@@ -256,38 +229,29 @@
             });
             
             const daysContainer = document.getElementById('daysCheckboxes');
-            const DISPLAY_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+            const DISPLAY_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"]; // الجمعة محذوفة
             
             DISPLAY_DAYS.forEach(day => {
                 const dayLabel = document.createElement('label');
                 dayLabel.classList.add('day-checkbox');
-                dayLabel.innerHTML = `
-                    <input type="checkbox" name="day" value="${day}"> ${day}
-                `;
+                dayLabel.innerHTML = `<input type="checkbox" name="day" value="${day}"> ${day}`;
                 daysContainer.appendChild(dayLabel);
             });
             
             toggleReasonField(); 
         }
 
-
-        // ----------------------------------------------------------------
-        // 4. وظيفة الحفظ في Firebase (مُعدَّلة)
-        // ----------------------------------------------------------------
         async function saveToFirebase(data) {
-            // ⚠️ استلام الحقل الجديد
             const { volunteerName, day, status, reason, registrationTime, registrationDateTimestamp } = data; 
-            
             const docId = `${volunteerName}_${day}`; 
-            
             try {
                 await db.collection("user_attendance").doc(docId).set({
                     volunteerName,
                     day,
                     status,
                     reason,
-                    registrationTime, // يُبقى للتوثيق والواتساب
-                    registrationDateTimestamp // 🎯 الحقل الجديد لضمان عمل التقرير
+                    registrationTime,
+                    registrationDateTimestamp
                 });
                 return true;
             } catch (e) {
@@ -296,10 +260,6 @@
             }
         }
 
-
-        // ----------------------------------------------------------------
-        // 5. معالجة إرسال النموذج (مُعدَّلة)
-        // ----------------------------------------------------------------
         document.getElementById('attendanceForm').addEventListener('submit', async function(event) {
             event.preventDefault();
 
@@ -322,7 +282,6 @@
             
             const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
             
-            // 🎯 جلب التاريخ بصيغة نصية ورقمية
             const registrationTime = getCurrentDateTime(); 
             const registrationDateTimestamp = getCurrentTimestamp(); 
             
@@ -347,9 +306,6 @@
             statusDiv.className = '';
             statusDiv.textContent = 'جاري التسجيل...';
             
-            // ------------------------------------------
-            // 1. الحفظ في Firebase لكل يوم مختار
-            // ------------------------------------------
             const selectedDays = Array.from(daysCheckboxes).map(cb => cb.value);
             let saveSuccess = true;
             
@@ -360,7 +316,7 @@
                     status, 
                     reason, 
                     registrationTime,
-                    registrationDateTimestamp // 🎯 إرسال التاريخ الرقمي
+                    registrationDateTimestamp
                 }; 
                 const result = await saveToFirebase(data);
                 if (!result) {
@@ -376,9 +332,6 @@
                 return;
             }
             
-            // ------------------------------------------
-            // 2. إعداد رسالة الواتساب 
-            // ------------------------------------------
             const actionText = status === 'حضور' ? 'حضور' : 'اعتذار طارئ';
             const actionTitle = status === 'حضور' ? 'حضور متطوع' : 'اعتذار متطوع';
             const actionEnd = status === 'حضور' ? 'تم تسجيل الحضور فى الموقع ✅️' : 'تم تسجيل الاعتذار فى الموقع ✅️';
@@ -394,39 +347,24 @@
 `;
             
             if (status === 'اعتذار') {
-                message += `
-سبب الاعتذار: ${reason}
-`;
-                if (lateReason) { 
-                    message += `
-سبب تأخر الإبلاغ: ${lateReason}
-`;
-                }
+                message += `سبب الاعتذار: ${reason}\n`;
+                if (lateReason) message += `سبب تأخر الإبلاغ: ${lateReason}\n`;
             }
 
-            message += `
----
-${actionEnd}
-`;
+            message += `---\n${actionEnd}`;
 
             const encodedMessage = encodeURIComponent(message.trim());
             const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
 
-            // ------------------------------------------
-            // 3. تحديث واجهة المستخدم
-            // ------------------------------------------
             statusDiv.className = 'status-success';
             statusDiv.textContent = `✅ تم تسجيل بياناتك بنجاح في Firebase.`;
             
             const waButton = document.getElementById('wa-button');
             waButton.href = whatsappUrl;
             document.getElementById('whatsapp-link').style.display = 'block';
-            
         });
 
-        // تشغيل دالة التعبئة عند تحميل الصفحة
         window.onload = initializeForm;
-
     </script>
 </body>
-</html>
+    </html>
