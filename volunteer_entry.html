@@ -150,8 +150,9 @@
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script>
+        // ⚠️ مفاتيح Firebase (تم توحيدها وتصحيحها)
         const firebaseConfig = {
-            apiKey: "AIzaSyCDJANXMfd6TR6R2ruLIi-xytlrB-LiCEs",
+            apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
             authDomain: "rdtt-15cbe.firebaseapp.com",
             projectId: "rdtt-15cbe",
             storageBucket: "rdtt-15cbe.firebasestorage.app",
@@ -303,6 +304,7 @@
             const docId = `${volunteerName}_${dayKey}`; 
             
             try {
+                // استخدام .set() يقوم بإنشاء أو تحديث السجل، وهو المطلوب لضمان آخر حالة هي المعتمدة
                 await db.collection("user_attendance").doc(docId).set({
                     volunteerName,
                     day: dayArabic, 
