@@ -213,6 +213,7 @@
         const parts = datePart.split(' ');
         if (parts.length < 3) return null;
         const day = parseInt(parts[0]);
+        // تنظيف اسم الشهر
         const monthName = parts[1].trim().replace(/[\u200e\u200f\s]/g, ''); 
         const month = MONTH_MAP[monthName];
         const year = parseInt(parts[2]);
@@ -257,19 +258,22 @@
         let currentDate = new Date(startDate);
         currentDate.setHours(0, 0, 0, 0); 
         
+        // **تصحيح منطق بدء الأسبوع:** العودة للخلف حتى الوصول لأقرب يوم سبت قبل تاريخ البدء (إن لم يكن يوم البدء هو السبت).
         let tempDate = new Date(startDate);
         let startDayIndex = tempDate.getDay(); 
         
+        // 6 هو يوم السبت
         while (startDayIndex !== 6) { 
             tempDate.setDate(tempDate.getDate() - 1);
             startDayIndex = tempDate.getDay();
+            // توقف إذا تجاوزنا فترة طويلة جداً (للتأكد من عدم وجود حلقة لانهائية)
+            if (tempDate.getTime() < startDate.getTime() - (30 * 24 * 60 * 60 * 1000)) break; 
         }
-        currentDate = tempDate; 
+        currentDate = new Date(tempDate); 
 
         while (currentDate.getTime() <= endDate.getTime() + (7 * 24 * 60 * 60 * 1000)) { 
             let currentWeekDays = [];
-            let weekStartDate = new Date(currentDate);
-
+            
             for (let i = 0; i < 7; i++) {
                 const day = new Date(currentDate);
                 const arabicDay = JS_DAY_MAP[day.getDay()];
@@ -278,10 +282,11 @@
                     const dayInfo = {
                         date: day,
                         dayName: arabicDay,
-                        dateKey: day.toDateString(),
+                        dateKey: day.toDateString(), // المفتاح المعتمد للعرض
                         isWorkingDay: WORKING_DAYS.includes(arabicDay)
                     };
                     currentWeekDays.push(dayInfo);
+                    // تخزين كل يوم داخل الدورة في الكاش
                     cycleDaysCache[dayInfo.dateKey] = dayInfo; 
                 }
                 currentDate.setDate(currentDate.getDate() + 1);
@@ -292,10 +297,9 @@
             if (workingDaysInWeek.length > 0) {
                 weeks.push({
                     index: weeks.length + 1,
-                    days: workingDaysInWeek, 
+                    days: currentWeekDays, // يجب أن تشمل كل الأيام في الأسبوع لضمان أن اليوم الأول هو السبت
                     startDisplay: workingDaysInWeek[0].date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }),
                     endDisplay: workingDaysInWeek[workingDaysInWeek.length - 1].date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }),
-                    weekStartDate: weekStartDate.toLocaleDateString('ar-EG'),
                 });
             }
         }
@@ -324,6 +328,7 @@
             container.appendChild(button);
         });
         
+        // عرض الأسبوع الأول افتراضياً بعد الإنشاء
         viewWeek(cycleWeeks[0]);
     }
 
@@ -346,10 +351,14 @@
                 rawRecords.push({ id: doc.id, ...doc.data() });
             });
             
-            // فرز السجلات لضمان أن آخر سجل (أحدث تسجيل/اعتذار) هو الذي يبقى في allAttendanceData
-            // نعتمد هنا على أن Firebase يجلب البيانات بترتيب ما أو أننا سنحلل التاريخ
-            // يفضل فرزها بناءً على timestamp إذا كانت موجودة، أو نعتمد على أن allAttendanceData سيحتفظ بآخر قيمة
-            
+            // 💡 فرز السجلات لضمان أن آخر سجل (أحدث تسجيل/اعتذار) هو الذي يبقى
+            // يتم الفرز باستخدام الطابع الزمني (timestamp) إذا وجد، وإلا نعتمد على أن allAttendanceData سيحتفظ بآخر قيمة
+            rawRecords.sort((a, b) => {
+                 const timeA = a.registrationDateTimestamp ? a.registrationDateTimestamp.seconds : 0;
+                 const timeB = b.registrationDateTimestamp ? b.registrationDateTimestamp.seconds : 0;
+                 return timeA - timeB; // تصاعدي (الأقدم أولاً)
+            });
+
             rawRecords.forEach(data => {
                 const name = data.volunteerName;
                 
@@ -370,13 +379,11 @@
                 const dateKey = recordDate.toDateString(); 
                 
                 // هذا المنطق سيضمن أن آخر سجل لنفس المتطوع في نفس اليوم هو الذي يتم الاحتفاظ به
-                // حيث أننا نكرر الكتابة فوق القيمة القديمة
+                // حيث أن الفرز تم بناءً على الوقت، وسيتم الكتابة فوق القيمة القديمة
                 if (!allAttendanceData[dateKey]) {
                     allAttendanceData[dateKey] = {};
                 }
                 
-                // 💡 الاحتفاظ بالتفاصيل، مع العلم أن هذا قد يكون آخر سجل (وليس بالضرورة الأصح لو تكرر)
-                // ولكن هذا أفضل لإظهار التفاصيل في الجدول اليومي
                 allAttendanceData[dateKey][name] = { 
                     status: data.status, 
                     reason: data.reason,
@@ -386,28 +393,39 @@
 
             resultArea.innerHTML = `<p class="status-present">✅ **تم تحديث الجدول بنجاح.** (تم جلب ${snapshot.docs.length} سجل)</p>`;
             
-            // إعادة عرض الأسبوع واليوم النشط
+            // 💡 هذا الجزء الجديد يضمن إعادة عرض الأسبوع واليوم النشط بعد التحديث
             if(cycleWeeks.length > 0) {
                  const activeWeekButton = document.querySelector('.week-buttons button.active');
+                 let activeWeek = cycleWeeks[0]; 
+                 let activeDateKey = activeWeek.days.find(d => d.isWorkingDay)?.dateKey;
+                 
+                 // محاولة تحديد الأسبوع النشط قبل التحديث
                  if (activeWeekButton) {
                      const weekIndexMatch = activeWeekButton.textContent.match(/أسبوع (\d+)/);
                      if (weekIndexMatch) {
                          const weekIndex = parseInt(weekIndexMatch[1]);
-                         const activeWeek = cycleWeeks.find(w => w.index === weekIndex);
-                         if (activeWeek) {
-                              const activeDayButton = document.querySelector('.day-buttons button.active');
-                              if (activeDayButton) {
-                                  const activeDateKey = activeDayButton.getAttribute('data-date-key');
-                                  viewWeek(activeWeek); 
-                                  if (activeDateKey) {
-                                       viewDay(activeDateKey);
-                                       return;
-                                  }
-                             }
-                         }
+                         const foundWeek = cycleWeeks.find(w => w.index === weekIndex);
+                         if (foundWeek) activeWeek = foundWeek;
                      }
                  }
-                viewWeek(cycleWeeks[0]);
+                
+                 // محاولة تحديد اليوم النشط قبل التحديث
+                 const activeDayButton = document.querySelector('.day-buttons button.active');
+                 if (activeDayButton) {
+                     activeDateKey = activeDayButton.getAttribute('data-date-key') || activeDateKey;
+                 } else {
+                     // إذا لم يكن هناك يوم نشط، حاول إظهار اليوم الأول في الأسبوع النشط
+                     activeDateKey = activeWeek.days.find(d => d.isWorkingDay)?.dateKey;
+                 }
+                
+                // إعادة عرض الأسبوع النشط
+                viewWeek(activeWeek); 
+                
+                // إعادة عرض اليوم النشط (أو اليوم الأول إذا لم يكن هناك يوم نشط محفوظ)
+                if (activeDateKey) {
+                    viewDay(activeDateKey);
+                }
+
             }
 
         } catch (error) {
@@ -417,6 +435,7 @@
     }
     
     async function initializeWeeksAndFetchData() {
+         // التأكد من تهيئة الأسابيع أولاً لتعبئة cycleWeeks و cycleDaysCache
          initializeWeeksButtons(); 
          await fetchAttendanceData();
     }
@@ -425,7 +444,7 @@
         const weekDetailsDiv = document.getElementById('week-details');
         
         document.querySelectorAll('.week-buttons button').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-week-${week.index}`).classList.add('active');
+        document.getElementById(`btn-week-${week.index}`)?.classList.add('active');
         
         let weekHeader = `
             <h3>ملخص الأسبوع ${week.index}: من ${week.startDisplay} إلى ${week.endDisplay}</h3>
@@ -433,7 +452,10 @@
                 <h4>اختر اليوم:</h4>
         `;
         
-        week.days.forEach(dayInfo => {
+        // 💡 عرض أيام الأسبوع المجدولة فقط في الأزرار
+        const workingDaysInWeek = week.days.filter(d => d.isWorkingDay);
+
+        workingDaysInWeek.forEach(dayInfo => {
             const displayDate = dayInfo.date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
             weekHeader += `<button class="day-btn" data-date-key="${dayInfo.dateKey}" onclick="viewDay('${dayInfo.dateKey}')">${dayInfo.dayName} (${displayDate})</button>`; 
         });
@@ -441,8 +463,9 @@
         weekHeader += `</div><div id="day-attendance-area"></div>`;
         weekDetailsDiv.innerHTML = weekHeader;
         
-        if (week.days.length > 0) {
-            viewDay(week.days[0].dateKey);
+        // 💡 التعديل الأهم: التأكد من استدعاء viewDay لليوم الأول بعد تحديث الأزرار
+        if (workingDaysInWeek.length > 0) {
+            viewDay(workingDaysInWeek[0].dateKey);
         }
     }
 
@@ -459,7 +482,7 @@
         let tableHTML = `
             <h4> حضور يوم: ${arabicDate} </h4>
             <div class="action-buttons">
-                <button id="whatsapp-day-button" onclick="sendAttendanceListViaWhatsApp('${arabicDate}')"> 📲 إرسال قائمة الحضور ليوم ${dayInfo.dayName} عبر واتساب </button>
+                <button id="whatsapp-day-button" onclick="sendAttendanceListViaWhatsApp()"> 📲 إرسال قائمة الحضور ليوم ${dayInfo.dayName} عبر واتساب </button>
             </div>
             <table class="weekly-table" id="daily-attendance-table">
                 <thead>
@@ -482,10 +505,9 @@
             let statusClass = '';
             let notes = '';
             
-            // 💡 شرط الحضور الافتراضي: المجدول حاضر ما لم يكن هناك سجل اعتذار
+            // 💡 منطق الحضور: مجدول ولم يعتذر، أو سجل حضور صريح
             const isAttending = (isFixed && (!recordedStatus || recordedStatus.status !== 'اعتذار')) || 
                                 (recordedStatus && recordedStatus.status === 'حضور');
-
 
             if (!isFixed && !recordedStatus) {
                 displayStatus = 'غير مجدول';
@@ -503,7 +525,7 @@
             } else {
                 displayStatus = 'حضور (افتراضي) ✅';
                 statusClass = 'status-present';
-                notes = 'مجدول (افتراضي)';
+                notes = 'مجدول (لم يسجل حالة)';
             }
             
             if (isAttending) {
@@ -584,10 +606,12 @@ ${listText}
             const jsDayIndex = currentDate.getDay();
             const arabicDay = JS_DAY_MAP[jsDayIndex];
 
+            // نأخذ أيام العمل المجدولة فقط لتقرير "الأيام المتوقعة"
             if (WORKING_DAYS.includes(arabicDay)) {
                 cycleDays.push({
                     date: new Date(currentDate), 
-                    day: arabicDay 
+                    day: arabicDay,
+                    dateKey: currentDate.toDateString()
                 });
             }
             currentDate.setDate(currentDate.getDate() + 1);
@@ -602,6 +626,10 @@ ${listText}
         try {
             if (Object.keys(allAttendanceData).length === 0) {
                  await fetchAttendanceData(); 
+                 if (Object.keys(allAttendanceData).length === 0) {
+                     monthlyReportArea.innerHTML = `<p class="status-absent">❌ **لا توجد بيانات حضور لجلبها.**</p>`;
+                     return;
+                 }
             }
 
             const cycle = getCurrentAttendanceCycle();
@@ -609,78 +637,85 @@ ${listText}
             
             const CLEAN_REPORT = {};
             VOLUNTEER_NAMES_ORDERED.forEach(name => {
-                // تم تغيير 'absence' إلى 'not_registered'
+                // expected: الأيام المجدولة
+                // attended: الحضور المحتسب (مجدول + صريح في غير أيام الجدولة)
+                // apologies: الاعتذارات المسجلة (في أيام الجدولة فقط)
+                // not_registered: أيام الجدولة التي لم يسجل فيها أي حالة
                 CLEAN_REPORT[name] = { expected: 0, attended: 0, apologies: 0, not_registered: 0 }; 
             });
 
-            // 💡 مصفوفة لتخزين الحالة النهائية لليوم (لتجنب احتساب اعتذار مكرر)
-            const attendanceMap = new Map(); 
+            // 💡 مصفوفة لتخزين الحالة النهائية لليوم
+            const dailyStatusMap = new Map(); 
             
+            // 1. تجميع الحالة النهائية لكل متطوع في كل يوم بناءً على آخر تسجيل
             for (const dateKey in allAttendanceData) {
                 const recordDate = new Date(dateKey);
                 
                 if (recordDate.getTime() >= cycle.startDate.getTime() && recordDate.getTime() <= cycle.endDate.getTime()) {
                      for (const name in allAttendanceData[dateKey]) {
-                        if (!attendanceMap.has(name)) {
-                            attendanceMap.set(name, new Map());
+                        if (!dailyStatusMap.has(name)) {
+                            dailyStatusMap.set(name, new Map());
                         }
                         
+                        // الاعتذار هو أولوية، يليه الحضور الصريح
                         const currentStatus = allAttendanceData[dateKey][name].status;
                         
-                        // 💡 التعديل لضمان احتساب الاعتذار مرة واحدة وأنه يلغي الحضور في نفس اليوم
-                        const existingStatus = attendanceMap.get(name)?.get(dateKey);
-
                         if (currentStatus === 'اعتذار') {
-                            // إذا سُجل اعتذار، فهو اعتذار بغض النظر عن أي شيء آخر في نفس اليوم
-                            attendanceMap.get(name).set(dateKey, 'اعتذار');
+                            dailyStatusMap.get(name).set(dateKey, 'اعتذار');
                         } else if (currentStatus === 'حضور') {
-                            // إذا سُجل حضور، يتم تسجيله ما لم يكن هناك اعتذار مسجل بالفعل في هذا اليوم
-                            if (!existingStatus || existingStatus !== 'اعتذار') {
-                                attendanceMap.get(name).set(dateKey, 'حضور');
-                            }
+                            // تسجيل الحضور ما لم يكن هناك اعتذار مسجل بالفعل في هذا اليوم (بناءً على الترتيب التصاعدي في fetchAttendanceData)
+                            dailyStatusMap.get(name).set(dateKey, 'حضور');
                         }
                     }
                 }
             }
             
+            // 2. حساب التقرير بناءً على الأيام المجدولة
             VOLUNTEER_NAMES_ORDERED.forEach(name => {
                 const report = CLEAN_REPORT[name];
                 
-                let scheduledPresent = 0;
-                let scheduledApology = 0;
-                let explicitPresent = 0;
+                let actualAttendance = 0;
+                let actualApologies = 0;
+                let explicitAttendanceOutOfSchedule = 0;
+                let unregisteredAttendance = 0;
                 
                 cycleDays.forEach(dayInfo => {
-                    const dateKey = dayInfo.date.toDateString();
+                    const dateKey = dayInfo.dateKey;
                     const dayArabic = dayInfo.day;
-                    const status = attendanceMap.get(name)?.get(dateKey);
+                    const status = dailyStatusMap.get(name)?.get(dateKey);
+                    
+                    const isScheduled = FIXED_VOLUNTEERS[name].includes(dayArabic);
 
-                    if (FIXED_VOLUNTEERS[name].includes(dayArabic)) { 
+                    if (isScheduled) { 
                         report.expected++;
                         
                         if (status === 'حضور') {
-                            scheduledPresent++; 
+                            actualAttendance++; 
                         } else if (status === 'اعتذار') {
-                            scheduledApology++; 
+                            actualApologies++; 
                         } else {
-                            // حضور افتراضي مجدول (لم يسجل أي شيء)
-                            scheduledPresent++; 
+                            // مجدول ولم يسجل حالة = حضور افتراضي
+                            unregisteredAttendance++; 
                         }
                     } else { 
+                        // غير مجدول: يحسب الحضور الصريح فقط
                         if (status === 'حضور') {
-                            explicitPresent++; 
+                            explicitAttendanceOutOfSchedule++; 
                         }
-                        // الاعتذار في غير أيام الجدولة لا يحسب في خانة الاعتذار (فقط الحضور يحسب)
                     }
                 });
-
-                report.attended = scheduledPresent + explicitPresent; 
-                report.apologies = scheduledApology; 
                 
-                // حساب عدم تسجيل الحالة
-                report.not_registered = report.expected - scheduledPresent - scheduledApology;
+                // الحضور المحتسب = (الحضور الفعلي المسجل في أيام الجدولة + الحضور الافتراضي) + الحضور الصريح في غير أيام الجدولة
+                report.attended = actualAttendance + unregisteredAttendance + explicitAttendanceOutOfSchedule; 
+                report.apologies = actualApologies; 
+                report.not_registered = report.expected - actualAttendance - actualApologies;
                 
+                // إعادة الضبط إذا كانت الأيام المتوقعة صفر (للمتطوعين غير المجدولين)
                 if (report.expected === 0) {
+                     report.not_registered = 0;
+                     // إذا كان غير مجدول ولديه حضور صريح، فإن expected هي 0، وattended تكون > 0، وهو ما نريد
+                } else if (report.not_registered < 0) {
+                     // منع أن تكون القيمة سالبة في حال وجود أخطاء منطقية غير متوقعة
                      report.not_registered = 0;
                 }
             });
@@ -688,7 +723,7 @@ ${listText}
             finalMonthlyReportData.cycleDisplay = cycle.display;
             finalMonthlyReportData.data = CLEAN_REPORT;
 
-            // 💡 تم تغيير اسم العمود هنا
+            // ... (باقي كود إنشاء جدول HTML للتقرير الشهري) ...
             let tableHTML = `
                 <h3>تقرير الحضور (الحساب وفقاً لقواعد العمل)</h3>
                 <div class="monthly-summary">
