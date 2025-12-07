@@ -160,7 +160,7 @@
 </div>
 
 <script>
-    // ⚠️ مفاتيح Firebase (استبدلها بمفاتيحك الحقيقية)
+    // ⚠️ مفاتيح Firebase (تم توحيدها وتصحيحها)
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -459,7 +459,7 @@
         let tableHTML = `
             <h4> حضور يوم: ${arabicDate} </h4>
             <div class="action-buttons">
-                <button id="whatsapp-day-button" onclick="sendAttendanceListViaWhatsApp()"> 📲 إرسال قائمة الحضور ليوم ${dayInfo.dayName} عبر واتساب </button>
+                <button id="whatsapp-day-button" onclick="sendAttendanceListViaWhatsApp('${arabicDate}')"> 📲 إرسال قائمة الحضور ليوم ${dayInfo.dayName} عبر واتساب </button>
             </div>
             <table class="weekly-table" id="daily-attendance-table">
                 <thead>
@@ -525,28 +525,23 @@
         currentDayWhatsAppList.names = finalAttendanceNames;
         currentDayWhatsAppList.dayName = dayInfo.dayName;
         currentDayWhatsAppList.dateKey = dateKey;
+        // تم تمرير التاريخ العربي هنا ليتم استخدامه في دالة الواتساب
+        currentDayWhatsAppList.arabicDate = arabicDate; 
         
         document.getElementById('whatsapp-day-button').textContent = `📲 إرسال قائمة الحضور ليوم ${dayInfo.dayName} عبر واتساب (${finalAttendanceNames.length} متطوع)`;
     }
 
     // ----------------------------------------------------------------
-    // 4. وظائف الواتساب (التنسيق القديم الذي طلبته)
+    // 4. وظائف الواتساب (تم تصحيح التاريخ لاستخدام التاريخ المعروض)
     // ----------------------------------------------------------------
-
-    function getTomorrowDateString() {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1); 
-        const dateString = tomorrow.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
-        return dateString;
-    }
 
     function sendAttendanceListViaWhatsApp() {
         if (!currentDayWhatsAppList.dayName) return;
 
         const day = currentDayWhatsAppList.dayName;
         const attendanceList = currentDayWhatsAppList.names;
-        
-        const dateString = getTomorrowDateString(); 
+        const arabicDate = currentDayWhatsAppList.arabicDate; // استخدام التاريخ العربي الفعلي
+
         let listText = attendanceList.map((name, index) => `${index + 1}. ${name}`).join('\n');
         
         if (attendanceList.length === 0) {
@@ -555,7 +550,7 @@
         
         const message = `
 📌 قائمة الحضور اليومية
-🗓️ اليوم : ${day} - ${dateString}
+🗓️ اليوم : ${day} - ${arabicDate} 
 🕒 معاد الشغل: ٣ العصر
 👥 إجمالي المتطوعين : ${attendanceList.length}
 
@@ -614,7 +609,8 @@ ${listText}
             
             const CLEAN_REPORT = {};
             VOLUNTEER_NAMES_ORDERED.forEach(name => {
-                CLEAN_REPORT[name] = { expected: 0, attended: 0, apologies: 0, absence: 0 };
+                // تم تغيير 'absence' إلى 'not_registered'
+                CLEAN_REPORT[name] = { expected: 0, attended: 0, apologies: 0, not_registered: 0 }; 
             });
 
             // 💡 مصفوفة لتخزين الحالة النهائية لليوم (لتجنب احتساب اعتذار مكرر)
@@ -632,7 +628,7 @@ ${listText}
                         const currentStatus = allAttendanceData[dateKey][name].status;
                         
                         // 💡 التعديل لضمان احتساب الاعتذار مرة واحدة وأنه يلغي الحضور في نفس اليوم
-                        const existingStatus = attendanceMap.get(name).get(dateKey);
+                        const existingStatus = attendanceMap.get(name)?.get(dateKey);
 
                         if (currentStatus === 'اعتذار') {
                             // إذا سُجل اعتذار، فهو اعتذار بغض النظر عن أي شيء آخر في نفس اليوم
@@ -681,16 +677,18 @@ ${listText}
                 report.attended = scheduledPresent + explicitPresent; 
                 report.apologies = scheduledApology; 
                 
-                report.absence = report.expected - scheduledPresent - scheduledApology;
+                // حساب عدم تسجيل الحالة
+                report.not_registered = report.expected - scheduledPresent - scheduledApology;
                 
                 if (report.expected === 0) {
-                     report.absence = 0;
+                     report.not_registered = 0;
                 }
             });
 
             finalMonthlyReportData.cycleDisplay = cycle.display;
             finalMonthlyReportData.data = CLEAN_REPORT;
 
+            // 💡 تم تغيير اسم العمود هنا
             let tableHTML = `
                 <h3>تقرير الحضور (الحساب وفقاً لقواعد العمل)</h3>
                 <div class="monthly-summary">
@@ -708,7 +706,7 @@ ${listText}
                             <th>الأيام المتوقعة (مجدول)</th>
                             <th>الحضور المحتسب (الفعلي + الافتراضي)</th>
                             <th>الاعتذار المسجل (الفعلي)</th>
-                            <th>الغياب المجدول</th>
+                            <th>عدم تسجيل الحالة (غ/ا)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -723,7 +721,7 @@ ${listText}
                         <td>${report.expected} أيام</td>
                         <td class="status-present">${report.attended} أيام</td>
                         <td class="status-absent">${report.apologies} أيام</td>
-                        <td>${report.absence} أيام</td>
+                        <td>${report.not_registered} أيام</td>
                     </tr>
                 `;
             });
