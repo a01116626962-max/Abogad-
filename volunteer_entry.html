@@ -53,10 +53,12 @@
             background-color: #f9f9f9;
         }
         .day-checkbox {
-            display: inline-block;
-            margin-left: 20px;
+            display: block; 
             margin-bottom: 10px;
             font-weight: normal;
+        }
+        .day-checkbox input[type="checkbox"] {
+            margin-left: 8px;
         }
         .submit-btn {
             display: block;
@@ -115,8 +117,10 @@
                 <option value="">اختر اسمك...</option>
             </select>
 
-            <label>الأيام التي ستأتي فيها (يمكن اختيار يوم أو أكثر):</label>
-            <div id="daysCheckboxes" class="days-container" onchange="toggleReasonField()"></div>
+            <label>التواريخ التي تسجل حالتك لها (السبت - الخميس):</label>
+            <div id="daysCheckboxes" class="days-container" onchange="toggleReasonField()">
+                <p style="font-size: 0.9em; color:#6c757d;">جاري تحميل الأيام المتاحة...</p>
+            </div>
 
             <label for="status">الحالة:</label>
             <select id="status" required onchange="toggleReasonField()">
@@ -166,7 +170,9 @@
             "إبراهيم", "مروان", "عبدالرحمن", "معتز" 
         ];
 
-        const DAYS_OF_WEEK = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+        const WORKING_DAYS_ARABIC = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+        const JS_DAY_MAP = { 0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت" };
+
 
         function getCurrentTimestamp() {
             return firebase.firestore.Timestamp.now(); 
@@ -179,15 +185,57 @@
             return `${date} – ${time}`; 
         }
 
+        function formatDateKey(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // 💡 التعديل هنا: لعرض اليوم الحالي + 10 أيام قادمة (أي نطاق 11 يوم يبدأ من اليوم)
+        function getSelectableDays() {
+            const daysToDisplay = [];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); 
+
+            // البدء من اليوم (i=0) والانتهاء بعد 10 أيام (i=10)
+            for (let i = 0; i <= 10; i++) {
+                const date = new Date(today);
+                date.setDate(today.getDate() + i);
+                
+                const arabicDay = JS_DAY_MAP[date.getDay()];
+
+                // إظهار أيام العمل فقط
+                if (WORKING_DAYS_ARABIC.includes(arabicDay)) {
+                    const displayDate = date.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+                    
+                    let label = `${arabicDay} (${displayDate})`;
+                    
+                    // تحديد اليوم الحالي فقط بـ " - اليوم"
+                    if (i === 0) label += " - اليوم";
+
+                    daysToDisplay.push({
+                        dateKey: formatDateKey(date),
+                        display: label,
+                        isCurrentDay: i === 0
+                    });
+                }
+            }
+            return daysToDisplay;
+        }
+
         function isCurrentDaySelected() {
-            const now = new Date();
-            const currentDayIndex = now.getDay(); // 0 = الأحد
-            const currentDayArabic = DAYS_OF_WEEK[currentDayIndex];
-
-            const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
-            const selectedDays = Array.from(daysCheckboxes).map(cb => cb.value);
-
-            return selectedDays.includes(currentDayArabic);
+            const selectedDates = document.querySelectorAll('input[name="day"]:checked');
+            
+            // تحقق مما إذا كان التاريخ الفعلي لليوم الحالي (بتنسيق DateKey) موجوداً بين الخيارات المختارة
+            const todayKey = formatDateKey(new Date()); 
+            
+            for(const checkbox of selectedDates) {
+                if (checkbox.value === todayKey) {
+                    return true;
+                }
+            }
+            return false;
         }
         
         function toggleReasonField() {
@@ -229,12 +277,19 @@
             });
             
             const daysContainer = document.getElementById('daysCheckboxes');
-            const DISPLAY_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"]; // الجمعة محذوفة
+            daysContainer.innerHTML = '';
             
-            DISPLAY_DAYS.forEach(day => {
+            const selectableDays = getSelectableDays();
+            
+            if (selectableDays.length === 0) {
+                 daysContainer.innerHTML = '<p style="color:red;">لا توجد أيام عمل متاحة للتسجيل حالياً في النطاق المحدد.</p>';
+                 return;
+            }
+            
+            selectableDays.forEach(dayInfo => {
                 const dayLabel = document.createElement('label');
                 dayLabel.classList.add('day-checkbox');
-                dayLabel.innerHTML = `<input type="checkbox" name="day" value="${day}"> ${day}`;
+                dayLabel.innerHTML = `<input type="checkbox" name="day" value="${dayInfo.dateKey}"> ${dayInfo.display}`;
                 daysContainer.appendChild(dayLabel);
             });
             
@@ -242,12 +297,16 @@
         }
 
         async function saveToFirebase(data) {
-            const { volunteerName, day, status, reason, registrationTime, registrationDateTimestamp } = data; 
-            const docId = `${volunteerName}_${day}`; 
+            const { volunteerName, status, reason, registrationTime, registrationDateTimestamp, dayKey, dayArabic } = data; 
+            
+            // docId فريد لكل متطوع في يوم معين (YYYY-MM-DD)
+            const docId = `${volunteerName}_${dayKey}`; 
+            
             try {
                 await db.collection("user_attendance").doc(docId).set({
                     volunteerName,
-                    day,
+                    day: dayArabic, 
+                    dateKey: dayKey,
                     status,
                     reason,
                     registrationTime,
@@ -265,19 +324,20 @@
 
             const volunteerName = document.getElementById('volunteerName').value;
             const status = document.getElementById('status').value;
-            const reason = document.getElementById('reason').value.trim(); 
+            let reason = document.getElementById('reason').value.trim(); 
             
             let lateReason = ""; 
             const lateReasonContainer = document.getElementById('lateReasonContainer');
-            const lateReasonInput = document.getElementById('lateReason');
 
             if (lateReasonContainer.style.display !== 'none') {
+                const lateReasonInput = document.getElementById('lateReason');
                 lateReason = lateReasonInput.value.trim();
                 if (!lateReason) {
                     statusDiv.className = 'status-error';
                     statusDiv.textContent = 'الرجاء كتابة سبب تأخر الاعتذار حيث أنه ليوم حالي.';
                     return;
                 }
+                reason = `(سبب التأخر: ${lateReason}) ${reason}`; // دمج سبب التأخر في حقل السبب
             }
             
             const daysCheckboxes = document.querySelectorAll('input[name="day"]:checked');
@@ -297,7 +357,7 @@
                 return;
             }
             
-            if (status === 'اعتذار' && !reason) {
+            if (status === 'اعتذار' && !document.getElementById('reason').value.trim()) {
                 statusDiv.className = 'status-error';
                 statusDiv.textContent = 'الرجاء كتابة سبب الاعتذار.';
                 return;
@@ -306,18 +366,26 @@
             statusDiv.className = '';
             statusDiv.textContent = 'جاري التسجيل...';
             
-            const selectedDays = Array.from(daysCheckboxes).map(cb => cb.value);
+            const selectedDaysKeys = Array.from(daysCheckboxes).map(cb => cb.value);
             let saveSuccess = true;
             
-            for (const day of selectedDays) {
+            for (const dayKey of selectedDaysKeys) {
+                // استخلاص اسم اليوم العربي من الـ dayKey
+                const parts = dayKey.split('-');
+                // يجب الانتباه عند إنشاء التاريخ من الأجزاء لمنع مشاكل المنطقة الزمنية
+                const dateFromKey = new Date(parts[0], parts[1] - 1, parts[2]); // YYYY, MM-1, DD
+                const dayArabic = JS_DAY_MAP[dateFromKey.getDay()];
+                
                 const data = { 
                     volunteerName, 
-                    day, 
+                    dayKey, 
+                    dayArabic, 
                     status, 
                     reason, 
                     registrationTime,
                     registrationDateTimestamp
                 }; 
+                
                 const result = await saveToFirebase(data);
                 if (!result) {
                     saveSuccess = false;
@@ -332,23 +400,27 @@
                 return;
             }
             
+            // تهيئة رسالة الواتساب
             const actionText = status === 'حضور' ? 'حضور' : 'اعتذار طارئ';
             const actionTitle = status === 'حضور' ? 'حضور متطوع' : 'اعتذار متطوع';
             const actionEnd = status === 'حضور' ? 'تم تسجيل الحضور فى الموقع ✅️' : 'تم تسجيل الاعتذار فى الموقع ✅️';
-            const daysList = selectedDays.join('، ');
+            
+            const daysListDisplay = Array.from(daysCheckboxes).map(cb => {
+                 const dayLabel = cb.parentNode.textContent.trim();
+                 return dayLabel.replace(' - اليوم', '').replace(' - أمس', '').split(' (')[0];
+            }).join('، ');
             
             let message = `
 📌 ${actionTitle}
 
 الاسم: ${volunteerName}
 الحالة: ${actionText}
-الأيام المسجلة: ${daysList}
+الأيام المسجلة: ${daysListDisplay}
 وقت التسجيل: ${registrationTime}
 `;
             
             if (status === 'اعتذار') {
-                message += `سبب الاعتذار: ${reason}\n`;
-                if (lateReason) message += `سبب تأخر الإبلاغ: ${lateReason}\n`;
+                message += `التفاصيل: ${document.getElementById('reason').value.trim()}\n`;
             }
 
             message += `---\n${actionEnd}`;
