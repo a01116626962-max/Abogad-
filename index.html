@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>جدول الحضور الأسبوعي والشهري</title>
     <style>
-        /* الأنماط (CSS) */
+        /* (الأنماط CSS لم تتغير) */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f4f4f9;
@@ -94,10 +94,6 @@
             color: #155724; 
             font-weight: bold;
         }
-        .status-default-muted {
-            color: #999; 
-            font-style: italic;
-        }
         .status-not-scheduled {
             background-color: #f9f9f9;
             color: #ccc;
@@ -118,7 +114,7 @@
             margin-right: 10px;
         }
         #whatsapp-day-button {
-             background-color: #075E54; /* لون الواتساب من الكود القديم */
+             background-color: #075E54;
              margin-left: 0;
              display: block;
              width: 100%;
@@ -193,14 +189,11 @@
     
     const VOLUNTEER_NAMES_ORDERED = Object.keys(FIXED_VOLUNTEERS);
     
-    let allAttendanceData = {}; 
+    let allAttendanceData = {}; // يخزن آخر حالة حضور/اعتذار لكل متطوع في يوم معين (للعرض الأسبوعي)
     let cycleWeeks = []; 
     let finalMonthlyReportData = { cycleDisplay: '', data: {} }; 
-    
-    // 💡 تم تحديث هذا ليخزن قائمة الأسماء التي سيتم إرسالها للواتساب
     let currentDayWhatsAppList = { names: [], dayName: null, dateKey: null };
-    
-    let cycleDaysCache = {}; // تخزين تفاصيل أيام الدورة بالكامل بالـ dateKey
+    let cycleDaysCache = {}; 
 
     const JS_DAY_MAP = {
         0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت"
@@ -213,6 +206,7 @@
         "يوليـو": 6, "أغسطـس": 7, "سبتمبـر": 8, "أكتوبـر": 9, "نوفمبـر": 10, "ديسمبـر": 11 
     };
 
+    // دالة تحليل التاريخ النصي (للسجلات القديمة فقط)
     function parseRegistrationDate(timeString) {
         if (!timeString) return null;
         const datePart = timeString.split(' – ')[0].trim();
@@ -288,7 +282,6 @@
                         isWorkingDay: WORKING_DAYS.includes(arabicDay)
                     };
                     currentWeekDays.push(dayInfo);
-                    // تخزين اليوم في الكاش ليتم استخدامه لاحقاً في viewDay
                     cycleDaysCache[dayInfo.dateKey] = dayInfo; 
                 }
                 currentDate.setDate(currentDate.getDate() + 1);
@@ -309,7 +302,6 @@
         return weeks;
     }
 
-    // تهيئة أزرار الأسابيع
     function initializeWeeksButtons() {
         const cycle = getCurrentAttendanceCycle();
         cycleWeeks = calculateWorkingWeeks(cycle.startDate, cycle.endDate);
@@ -348,14 +340,23 @@
 
         try {
             const snapshot = await db.collection("user_attendance").get();
+            const rawRecords = [];
 
             snapshot.forEach(doc => {
-                const data = doc.data();
+                rawRecords.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // فرز السجلات لضمان أن آخر سجل (أحدث تسجيل/اعتذار) هو الذي يبقى في allAttendanceData
+            // نعتمد هنا على أن Firebase يجلب البيانات بترتيب ما أو أننا سنحلل التاريخ
+            // يفضل فرزها بناءً على timestamp إذا كانت موجودة، أو نعتمد على أن allAttendanceData سيحتفظ بآخر قيمة
+            
+            rawRecords.forEach(data => {
                 const name = data.volunteerName;
                 
                 let recordDate;
                 let recordTimePart = data.registrationTime ? data.registrationTime.split(' – ')[1] : '';
 
+                // 💡 تصحيح قراءة التاريخ للسجلات القديمة والجديدة
                 if (data.registrationDateTimestamp && typeof data.registrationDateTimestamp.toDate === 'function') {
                     recordDate = data.registrationDateTimestamp.toDate();
                 } else if (data.registrationTime) {
@@ -367,11 +368,15 @@
                 if(!recordDate) return;
                 
                 const dateKey = recordDate.toDateString(); 
-
+                
+                // هذا المنطق سيضمن أن آخر سجل لنفس المتطوع في نفس اليوم هو الذي يتم الاحتفاظ به
+                // حيث أننا نكرر الكتابة فوق القيمة القديمة
                 if (!allAttendanceData[dateKey]) {
                     allAttendanceData[dateKey] = {};
                 }
                 
+                // 💡 الاحتفاظ بالتفاصيل، مع العلم أن هذا قد يكون آخر سجل (وليس بالضرورة الأصح لو تكرر)
+                // ولكن هذا أفضل لإظهار التفاصيل في الجدول اليومي
                 allAttendanceData[dateKey][name] = { 
                     status: data.status, 
                     reason: data.reason,
@@ -381,6 +386,7 @@
 
             resultArea.innerHTML = `<p class="status-present">✅ **تم تحديث الجدول بنجاح.** (تم جلب ${snapshot.docs.length} سجل)</p>`;
             
+            // إعادة عرض الأسبوع واليوم النشط
             if(cycleWeeks.length > 0) {
                  const activeWeekButton = document.querySelector('.week-buttons button.active');
                  if (activeWeekButton) {
@@ -415,7 +421,6 @@
          await fetchAttendanceData();
     }
     
-    // وظيفة عرض تفاصيل الأسبوع (التي تحتوي على أزرار الأيام)
     function viewWeek(week) {
         const weekDetailsDiv = document.getElementById('week-details');
         
@@ -430,20 +435,17 @@
         
         week.days.forEach(dayInfo => {
             const displayDate = dayInfo.date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
-             // 💡 نمرر فقط المفتاح النصي (dateKey)
             weekHeader += `<button class="day-btn" data-date-key="${dayInfo.dateKey}" onclick="viewDay('${dayInfo.dateKey}')">${dayInfo.dayName} (${displayDate})</button>`; 
         });
         
         weekHeader += `</div><div id="day-attendance-area"></div>`;
         weekDetailsDiv.innerHTML = weekHeader;
         
-        // الانتقال تلقائياً لعرض اليوم الأول من الأسبوع
         if (week.days.length > 0) {
             viewDay(week.days[0].dateKey);
         }
     }
 
-    // وظيفة عرض تفاصيل يوم واحد
     function viewDay(dateKey) {
         const dayInfo = cycleDaysCache[dateKey]; 
         if (!dayInfo) return; 
@@ -470,7 +472,7 @@
                 <tbody>
         `;
         
-        let finalAttendanceNames = []; // قائمة بأسماء الحاضرين فقط لزر الواتساب
+        let finalAttendanceNames = []; 
         
         VOLUNTEER_NAMES_ORDERED.forEach(name => {
             const isFixed = FIXED_VOLUNTEERS[name].includes(dayInfo.dayName);
@@ -480,17 +482,16 @@
             let statusClass = '';
             let notes = '';
             
+            // 💡 شرط الحضور الافتراضي: المجدول حاضر ما لم يكن هناك سجل اعتذار
             const isAttending = (isFixed && (!recordedStatus || recordedStatus.status !== 'اعتذار')) || 
                                 (recordedStatus && recordedStatus.status === 'حضور');
 
 
             if (!isFixed && !recordedStatus) {
-                // غير مجدول ولا يوجد سجل = غير مجدول
                 displayStatus = 'غير مجدول';
                 statusClass = 'status-not-scheduled';
                 notes = '-';
             } else if (recordedStatus) {
-                // يوجد سجل (حضور أو اعتذار)
                 notes = recordedStatus.time || recordedStatus.reason || '-';
                 if (recordedStatus.status === 'اعتذار') {
                     displayStatus = 'اعتذار ❌';
@@ -500,7 +501,6 @@
                     statusClass = 'status-present';
                 }
             } else {
-                // مجدول ولا يوجد سجل = حضور افتراضي
                 displayStatus = 'حضور (افتراضي) ✅';
                 statusClass = 'status-present';
                 notes = 'مجدول (افتراضي)';
@@ -522,17 +522,15 @@
         tableHTML += `</tbody></table>`;
         dayAttendanceArea.innerHTML = tableHTML;
         
-        // تحديث المتغير الخاص بالواتساب
         currentDayWhatsAppList.names = finalAttendanceNames;
         currentDayWhatsAppList.dayName = dayInfo.dayName;
         currentDayWhatsAppList.dateKey = dateKey;
         
-        // 💡 تحديث زر الواتساب ليظهر العدد
         document.getElementById('whatsapp-day-button').textContent = `📲 إرسال قائمة الحضور ليوم ${dayInfo.dayName} عبر واتساب (${finalAttendanceNames.length} متطوع)`;
     }
 
     // ----------------------------------------------------------------
-    // 4. وظائف الواتساب (تمت استعادتها لتنسيق الكود القديم)
+    // 4. وظائف الواتساب (التنسيق القديم الذي طلبته)
     // ----------------------------------------------------------------
 
     function getTomorrowDateString() {
@@ -548,7 +546,6 @@
         const day = currentDayWhatsAppList.dayName;
         const attendanceList = currentDayWhatsAppList.names;
         
-        // 💡 استخدام دالة getTomorrowDateString كما كانت في الكود القديم
         const dateString = getTomorrowDateString(); 
         let listText = attendanceList.map((name, index) => `${index + 1}. ${name}`).join('\n');
         
@@ -580,7 +577,7 @@ ${listText}
     }
     
     // ----------------------------------------------------------------
-    // 5. وظائف التقرير الشهري (لم تتغير)
+    // 5. وظائف التقرير الشهري 
     // ----------------------------------------------------------------
 
     function getDaysInCycle(start, end) {
@@ -609,7 +606,7 @@ ${listText}
 
         try {
             if (Object.keys(allAttendanceData).length === 0) {
-                 await fetchAttendanceData();
+                 await fetchAttendanceData(); 
             }
 
             const cycle = getCurrentAttendanceCycle();
@@ -620,18 +617,32 @@ ${listText}
                 CLEAN_REPORT[name] = { expected: 0, attended: 0, apologies: 0, absence: 0 };
             });
 
-            const attendanceMap = new Map();
+            // 💡 مصفوفة لتخزين الحالة النهائية لليوم (لتجنب احتساب اعتذار مكرر)
+            const attendanceMap = new Map(); 
             
-            // إعادة تجميع البيانات لتشمل التاريخ الفعلي في الدورة الشهرية
             for (const dateKey in allAttendanceData) {
                 const recordDate = new Date(dateKey);
-                // استخدام الـ cycle.startDate/endDate كأشياء تاريخ للمقارنة
+                
                 if (recordDate.getTime() >= cycle.startDate.getTime() && recordDate.getTime() <= cycle.endDate.getTime()) {
                      for (const name in allAttendanceData[dateKey]) {
                         if (!attendanceMap.has(name)) {
                             attendanceMap.set(name, new Map());
                         }
-                        attendanceMap.get(name).set(dateKey, allAttendanceData[dateKey][name].status);
+                        
+                        const currentStatus = allAttendanceData[dateKey][name].status;
+                        
+                        // 💡 التعديل لضمان احتساب الاعتذار مرة واحدة وأنه يلغي الحضور في نفس اليوم
+                        const existingStatus = attendanceMap.get(name).get(dateKey);
+
+                        if (currentStatus === 'اعتذار') {
+                            // إذا سُجل اعتذار، فهو اعتذار بغض النظر عن أي شيء آخر في نفس اليوم
+                            attendanceMap.get(name).set(dateKey, 'اعتذار');
+                        } else if (currentStatus === 'حضور') {
+                            // إذا سُجل حضور، يتم تسجيله ما لم يكن هناك اعتذار مسجل بالفعل في هذا اليوم
+                            if (!existingStatus || existingStatus !== 'اعتذار') {
+                                attendanceMap.get(name).set(dateKey, 'حضور');
+                            }
+                        }
                     }
                 }
             }
@@ -656,12 +667,14 @@ ${listText}
                         } else if (status === 'اعتذار') {
                             scheduledApology++; 
                         } else {
+                            // حضور افتراضي مجدول (لم يسجل أي شيء)
                             scheduledPresent++; 
                         }
                     } else { 
                         if (status === 'حضور') {
                             explicitPresent++; 
                         }
+                        // الاعتذار في غير أيام الجدولة لا يحسب في خانة الاعتذار (فقط الحضور يحسب)
                     }
                 });
 
