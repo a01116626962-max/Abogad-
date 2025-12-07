@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>جدول الحضور الأسبوعي والشهري</title>
     <style>
-        /* (الأنماط CSS لم تتغير) */
+        /* (الأنماط CSS لم تتغير عن الكود الأخير) */
         body {
             font-family: 'Arial', sans-serif;
             background-color: #f4f4f9;
@@ -132,7 +132,7 @@
     <h1>🗓️ جدول الحضور والتقرير الشهري</h1>
     
     <div id="result-area" style="margin-top:15px; padding:10px; border:1px solid #eee;">
-        <p style="color:#007bff;">اضغط على "تحديث الجدول" لجلب البيانات من الإنترنت.</p>
+        <p style="color:#007bff;">اضغط على "تحديث الجدول" لجلب البيانات من قاعدة البيانات.</p>
     </div>
 
     <div class="action-buttons">
@@ -189,7 +189,7 @@
     
     const VOLUNTEER_NAMES_ORDERED = Object.keys(FIXED_VOLUNTEERS);
     
-    let allAttendanceData = {}; // يخزن آخر حالة حضور/اعتذار لكل متطوع في يوم معين (للعرض الأسبوعي)
+    let allAttendanceData = {}; 
     let cycleWeeks = []; 
     let finalMonthlyReportData = { cycleDisplay: '', data: {} }; 
     let currentDayWhatsAppList = { names: [], dayName: null, dateKey: null };
@@ -206,21 +206,55 @@
         "يوليـو": 6, "أغسطـس": 7, "سبتمبـر": 8, "أكتوبـر": 9, "نوفمبـر": 10, "ديسمبـر": 11 
     };
 
-    // دالة تحليل التاريخ النصي (للسجلات القديمة فقط)
-    function parseRegistrationDate(timeString) {
-        if (!timeString) return null;
-        const datePart = timeString.split(' – ')[0].trim();
-        const parts = datePart.split(' ');
-        if (parts.length < 3) return null;
-        const day = parseInt(parts[0]);
-        // تنظيف اسم الشهر
-        const monthName = parts[1].trim().replace(/[\u200e\u200f\s]/g, ''); 
-        const month = MONTH_MAP[monthName];
-        const year = parseInt(parts[2]);
-        if (isNaN(day) || month === undefined || isNaN(year)) return null;
-        const date = new Date(year, month, day);
-        date.setHours(0, 0, 0, 0); 
-        return date;
+    /**
+     * دالة مساعدة لتنسيق التاريخ إلى مفتاح ثابت (YYYY-MM-DD)
+     * @param {Date} date - كائن التاريخ
+     * @returns {string} مفتاح التاريخ (مثال: 2025-12-08)
+     */
+    function formatDateKey(date) {
+        if (!(date instanceof Date) || isNaN(date)) return null;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    // 💡 دالة تحليل التاريخ - الأولوية للمفتاح الثابت الجديد
+    function parseRegistrationDate(data) {
+        let recordDate = null;
+        
+        // 1. الأولوية: استخدام الحقل الثابت الجديد YYYY-MM-DD
+        if (data.dateKey && data.dateKey.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            recordDate = new Date(data.dateKey); 
+        } 
+        
+        // 2. إذا لم يتوفر، استخدم الطابع الزمني (الموجود في السجلات الجديدة)
+        else if (data.registrationDateTimestamp && typeof data.registrationDateTimestamp.toDate === 'function') {
+            recordDate = data.registrationDateTimestamp.toDate();
+        } 
+        
+        // 3. إذا لم يتوفر، استخدم التحليل النصي القديم (للسجلات التاريخية جداً)
+        else if (data.registrationTime) {
+            const timeString = data.registrationTime;
+            const datePart = timeString.split(' – ')[0].trim();
+            const parts = datePart.split(' ');
+            
+            if (parts.length >= 3) {
+                const day = parseInt(parts[0]);
+                const monthName = parts[1].trim().replace(/[\u200e\u200f\s]/g, ''); 
+                const month = MONTH_MAP[monthName];
+                const year = parseInt(parts[2]);
+                if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+                    recordDate = new Date(year, month, day);
+                }
+            }
+        }
+        
+        if (recordDate && !isNaN(recordDate)) {
+             recordDate.setHours(0, 0, 0, 0); 
+             return recordDate;
+        }
+        return null;
     }
     
     // ----------------------------------------------------------------
@@ -268,7 +302,7 @@
         while (startDayIndex !== 6) { 
             tempDate.setDate(tempDate.getDate() - 1);
             startDayIndex = tempDate.getDay();
-            // حماية ضد التجاوز إذا كان التاريخ في الماضي البعيد
+            // حماية ضد التجاوز
             if (tempDate.getTime() < startDate.getTime() - (7 * 24 * 60 * 60 * 1000)) break; 
         }
         currentDate = new Date(tempDate); 
@@ -288,15 +322,16 @@
                 if (day.getTime() >= startDate.getTime() && day.getTime() <= endDate.getTime()) {
                     
                     const isWorkingDay = WORKING_DAYS.includes(arabicDay);
+                    // 💡 مفتاح التاريخ الثابت (YYYY-MM-DD)
+                    const dateKey = formatDateKey(day); 
 
                     const dayInfo = {
                         date: day,
                         dayName: arabicDay,
-                        dateKey: day.toDateString(), 
+                        dateKey: dateKey, 
                         isWorkingDay: isWorkingDay
                     };
                     
-                    // نجمع كل الأيام في الأسبوع التي تقع داخل الدورة
                     currentWeekDays.push(dayInfo);
 
                     // نملأ الكاش بجميع أيام الدورة (سواء كانت أيام عمل أم لا)
@@ -309,7 +344,6 @@
             
             if (daysInCycleInWeek.length > 0) {
                 // نستخدم أيام العمل فقط لعرض نطاق التاريخ في زر الأسبوع
-                const weekWorkingDays = daysInCycleInWeek.filter(d => d.isWorkingDay);
                 
                 let startDisplay = daysInCycleInWeek[0].date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
                 let endDisplay = daysInCycleInWeek[daysInCycleInWeek.length - 1].date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
@@ -327,6 +361,7 @@
     }
 
     function initializeWeeksButtons() {
+        // (نفس الكود)
         const cycle = getCurrentAttendanceCycle();
         cycleWeeks = calculateWorkingWeeks(cycle.startDate, cycle.endDate);
         const container = document.getElementById('week-buttons-container');
@@ -372,30 +407,20 @@
             });
             
             // فرز السجلات لضمان أن آخر سجل (أحدث تسجيل/اعتذار) هو الذي يبقى
-            // يتم الفرز باستخدام الطابع الزمني (timestamp) إذا وجد
             rawRecords.sort((a, b) => {
-                 const timeA = a.registrationDateTimestamp ? a.registrationDateTimestamp.seconds : 0;
-                 const timeB = b.registrationDateTimestamp ? b.registrationDateTimestamp.seconds : 0;
+                 const timeA = a.timestamp ? a.timestamp.seconds : 0;
+                 const timeB = b.timestamp ? b.timestamp.seconds : 0;
                  return timeA - timeB; // تصاعدي (الأقدم أولاً)
             });
 
             rawRecords.forEach(data => {
                 const name = data.volunteerName;
                 
-                let recordDate;
-                let recordTimePart = data.registrationTime ? data.registrationTime.split(' – ')[1] : '';
-
-                if (data.registrationDateTimestamp && typeof data.registrationDateTimestamp.toDate === 'function') {
-                    recordDate = data.registrationDateTimestamp.toDate();
-                } else if (data.registrationTime) {
-                    recordDate = parseRegistrationDate(data.registrationTime);
-                } else {
-                    return;
-                }
-                
+                // 💡 الحصول على كائن التاريخ الصحيح والمفتاح الثابت
+                const recordDate = parseRegistrationDate(data);
                 if(!recordDate) return;
-                
-                const dateKey = recordDate.toDateString(); 
+
+                const dateKey = formatDateKey(recordDate); // مفتاح YYYY-MM-DD
                 
                 // التأكد أن السجل يقع ضمن الأيام التي تهتم بها الدورة ( cycleDaysCache )
                 if (!cycleDaysCache[dateKey]) return; 
@@ -408,7 +433,7 @@
                 allAttendanceData[dateKey][name] = { 
                     status: data.status, 
                     reason: data.reason,
-                    time: recordTimePart 
+                    time: data.registrationTime.split(' – ')[1] || '-' 
                 };
             });
 
@@ -418,7 +443,6 @@
             if(cycleWeeks.length > 0) {
                  const activeWeekButton = document.querySelector('.week-buttons button.active');
                  let activeWeek = cycleWeeks[0]; 
-                 let activeDateKey = activeWeek.days.find(d => d.isWorkingDay)?.dateKey;
                  
                  if (activeWeekButton) {
                      const weekIndexMatch = activeWeekButton.textContent.match(/أسبوع (\d+)/);
@@ -429,12 +453,12 @@
                      }
                  }
                 
+                 let activeDateKey = activeWeek.days.find(d => d.isWorkingDay)?.dateKey;
+                 
                  const activeDayButton = document.querySelector('.day-buttons button.active');
                  if (activeDayButton) {
                      activeDateKey = activeDayButton.getAttribute('data-date-key') || activeDateKey;
-                 } else {
-                     activeDateKey = activeWeek.days.find(d => d.isWorkingDay)?.dateKey;
-                 }
+                 } 
                 
                 viewWeek(activeWeek); 
                 
@@ -472,6 +496,7 @@
 
         workingDaysInWeek.forEach(dayInfo => {
             const displayDate = dayInfo.date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
+            // 💡 استخدام dateKey الثابت في زر اليوم
             weekHeader += `<button class="day-btn" data-date-key="${dayInfo.dateKey}" onclick="viewDay('${dayInfo.dateKey}')">${dayInfo.dayName} (${displayDate})</button>`; 
         });
         
@@ -485,6 +510,7 @@
     }
 
     function viewDay(dateKey) {
+        // 💡 البحث باستخدام المفتاح الثابت YYYY-MM-DD
         const dayInfo = cycleDaysCache[dateKey]; 
         if (!dayInfo) return; 
         
@@ -514,6 +540,7 @@
         
         VOLUNTEER_NAMES_ORDERED.forEach(name => {
             const isFixed = FIXED_VOLUNTEERS[name].includes(dayInfo.dayName);
+            // 💡 البحث في سجلات الحضور باستخدام المفتاح الثابت
             const recordedStatus = allAttendanceData[dateKey] ? allAttendanceData[dateKey][name] : null;
 
             let displayStatus;
@@ -568,7 +595,7 @@
     }
 
     // ----------------------------------------------------------------
-    // 4. وظائف الواتساب
+    // 4. وظائف الواتساب (لم تتغير)
     // ----------------------------------------------------------------
 
     function sendAttendanceListViaWhatsApp() {
@@ -608,10 +635,9 @@ ${listText}
     }
     
     // ----------------------------------------------------------------
-    // 5. وظائف التقرير الشهري 
+    // 5. وظائف التقرير الشهري (تم تعديلها للاعتماد على المفتاح الثابت)
     // ----------------------------------------------------------------
 
-    // 💡 تم تصحيح هذه الدالة لحساب أيام العمل فقط داخل الدورة (من 26 إلى 25)
     function getDaysInCycle(start, end) {
         const cycleDays = [];
         let currentDate = new Date(start);
@@ -626,7 +652,8 @@ ${listText}
                 cycleDays.push({
                     date: new Date(currentDate), 
                     day: arabicDay,
-                    dateKey: currentDate.toDateString()
+                    // 💡 استخدام المفتاح الثابت
+                    dateKey: formatDateKey(currentDate) 
                 });
             }
             currentDate.setDate(currentDate.getDate() + 1);
@@ -660,11 +687,9 @@ ${listText}
             // تجميع الحالة النهائية لكل متطوع في كل يوم بناءً على آخر تسجيل
             const dailyStatusMap = new Map(); 
             
-            for (const dateKey in allAttendanceData) {
-                const recordDate = new Date(dateKey);
-                
-                // التأكد من أن السجل يقع داخل فترة التقرير
-                if (recordDate.getTime() >= cycle.startDate.getTime() && recordDate.getTime() <= cycle.endDate.getTime()) {
+            for (const dateKey in allAttendanceData) { // dateKey هو المفتاح الثابت YYYY-MM-DD
+                // التأكد من أن المفتاح يقع داخل الدورة (باستخدام الكاش للتأكد من أنه يوم عمل مجدول)
+                if (cycleDaysCache[dateKey]) {
                      for (const name in allAttendanceData[dateKey]) {
                         if (!dailyStatusMap.has(name)) {
                             dailyStatusMap.set(name, new Map());
