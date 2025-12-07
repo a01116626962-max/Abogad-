@@ -3,91 +3,170 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>موقعك مع التخزين الديناميكي (جاهز)</title>
+    <title>جدول الحضور الأسبوعي والشهري</title>
     <style>
+        /* الأنماط (CSS) */
         body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background-color: #f4f4f4;
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
             color: #333;
+            margin: 0;
+            padding: 20px;
             text-align: right;
+            direction: rtl;
         }
         .container {
-            max-width: 600px;
-            margin: auto;
+            max-width: 1000px;
+            margin: 0 auto;
             background: #fff;
             padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
-        h1 {
-            color: #4a4a4a;
-            border-bottom: 2px solid #ccc;
+        h1, h2, h3 {
+            color: #007bff;
+            border-bottom: 2px solid #eee;
             padding-bottom: 10px;
+            margin-top: 20px;
         }
-        input[type="text"], textarea {
-            width: 100%;
-            padding: 12px;
+        .action-buttons {
             margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 16px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
         }
         button {
-            background-color: #007bff;
+            padding: 10px 15px;
             color: white;
-            padding: 12px 20px;
             border: none;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
-            font-size: 16px;
+            margin-left: 10px;
             transition: background-color 0.3s;
+            background-color: #007bff;
         }
         button:hover {
-            background-color: #0056b3;
+            opacity: 0.9;
         }
-        #statusMessage {
-            margin-top: 20px;
-            padding: 10px;
+        /* أزرار الأسابيع */
+        .week-buttons button {
+            background-color: #6c757d;
+            margin: 5px;
+            font-weight: bold;
+        }
+        .week-buttons button.active {
+            background-color: #28a745;
+        }
+        /* أزرار الأيام */
+        .day-buttons button {
+            background-color: #17a2b8;
+            margin: 5px 5px 5px 0;
+            font-weight: normal;
+        }
+        .day-buttons button.active {
+            background-color: #007bff;
+        }
+
+        /* جداول الأسبوع والأيام */
+        .weekly-table, .monthly-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            font-size: 0.95em;
+        }
+        .weekly-table th, .weekly-table td, .monthly-table th, .monthly-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center; 
+        }
+        .weekly-table th, .monthly-table th {
+            background-color: #f2f2f2;
+            color: #333;
+        }
+        .weekly-table thead th:first-child, .monthly-table thead th:first-child {
+            text-align: right;
+        }
+        /* حالات الجدول */
+        .status-absent {
+            background-color: #f8d7da; 
+            color: #721c24; 
+            font-weight: bold;
+        }
+        .status-present {
+            background-color: #d4edda; 
+            color: #155724; 
+            font-weight: bold;
+        }
+        .status-default-muted {
+            color: #999; 
+            font-style: italic;
+        }
+        .status-not-scheduled {
+            background-color: #f9f9f9;
+            color: #ccc;
+            font-size: 0.8em;
+        }
+        /* تنسيق التقرير الشهري */
+        .monthly-summary {
+            background-color: #e9f7ef;
+            border: 1px solid #c8e6c9;
+            padding: 15px;
             border-radius: 4px;
-            text-align: center;
+            margin-top: 15px;
+        }
+        #copy-monthly-button {
+            background-color: #ffc107; 
+            color: #333;
+            margin-left: 0;
+            margin-right: 10px;
+        }
+        #whatsapp-day-button {
+             background-color: #075E54; /* لون الواتساب من الكود القديم */
+             margin-left: 0;
+             display: block;
+             width: 100%;
+             padding: 15px;
+             margin-top: 20px;
+             font-size: 1.1em;
         }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 </head>
 <body>
 
 <div class="container">
-    <h1>نموذج إرسال الرسائل (مدعوم من Firebase)</h1>
-    <p>سيتم حفظ الرسالة في قاعدة بيانات Firestore بمجرد الضغط على زر الإرسال.</p>
+    <h1>🗓️ جدول الحضور والتقرير الشهري</h1>
     
-    <form id="contactForm">
-        <label for="name">الاسم:</label>
-        <input type="text" id="name" required>
+    <div id="result-area" style="margin-top:15px; padding:10px; border:1px solid #eee;">
+        <p style="color:#007bff;">اضغط على "تحديث الجدول" لجلب البيانات من الإنترنت.</p>
+    </div>
 
-        <label for="message">الرسالة:</label>
-        <textarea id="message" rows="4" required></textarea>
+    <div class="action-buttons">
+        <button onclick="initializeWeeksAndFetchData()">تحديث الجدول من قاعدة البيانات</button>
+    </div>
 
-        <button type="submit">إرسال وحفظ البيانات</button>
-    </form>
+    <hr>
 
-    <div id="statusMessage"></div>
+    <h2 id="week-title-area">🗓️ عرض الحضور حسب الأسبوع</h2>
+
+    <div id="week-buttons-container" class="week-buttons">
+        <p>جاري تحميل أسابيع الدورة...</p>
+    </div>
+
+    <div id="week-details">
+        <p>الرجاء اختيار أسبوع لعرض حالة المتطوعين.</p>
+    </div>
+    
+    <hr>
+
+    <h2 onclick="calculateMonthlyAttendance()" style="cursor:pointer;">📊 التقرير الشهري الدقيق (اضغط للحساب)</h2>
+    <div id="monthly-report-area">
+        <p>اضغط على العنوان أعلاه لحساب أيام الحضور والاعتذار للدورة الشهرية الحالية (26 - 25).</p>
+    </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-
 <script>
-    // ----------------------------------------------------
-    // مفاتيح Firebase الخاصة بمشروعك rdtt-15cbe
-    // ----------------------------------------------------
+    // ⚠️ مفاتيح Firebase (استبدلها بمفاتيحك الحقيقية)
     const firebaseConfig = {
-        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
         projectId: "rdtt-15cbe",
         storageBucket: "rdtt-15cbe.firebasestorage.app",
@@ -95,43 +174,587 @@
         appId: "1:219502671343:web:b289b11869e25c9a30321a"
     };
 
-    // تهيئة Firebase
     firebase.initializeApp(firebaseConfig);
-
-    // الوصول إلى قاعدة البيانات Firestore
     const db = firebase.firestore();
+    
+    // ----------------------------------------------------------------
+    // 1. الإعدادات الثابتة والجدولة
+    // ----------------------------------------------------------------
+    const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
 
-    const form = document.getElementById('contactForm');
-    const statusDiv = document.getElementById('statusMessage');
+    const FIXED_VOLUNTEERS = {
+        "أحمد": WORKING_DAYS, "هدير": WORKING_DAYS, "محمد إبراهيم": WORKING_DAYS, 
+        "محمد عبدالحميد": WORKING_DAYS, "سامى": ["السبت", "الأحد", "الثلاثاء"], 
+        "ممتاز": WORKING_DAYS, "حبيبة": WORKING_DAYS, "ساندي": [],
+        "رحاب": ["السبت", "الإثنين", "الثلاثاء"], "معاذ": ["الأحد", "الثلاثاء", "الخميس"], 
+        "مازن": WORKING_DAYS, "يوسف": [], "إبراهيم": WORKING_DAYS, 
+        "مروان": [], "عبدالرحمن": [], "معتز": WORKING_DAYS 
+    };
+    
+    const VOLUNTEER_NAMES_ORDERED = Object.keys(FIXED_VOLUNTEERS);
+    
+    let allAttendanceData = {}; 
+    let cycleWeeks = []; 
+    let finalMonthlyReportData = { cycleDisplay: '', data: {} }; 
+    
+    // 💡 تم تحديث هذا ليخزن قائمة الأسماء التي سيتم إرسالها للواتساب
+    let currentDayWhatsAppList = { names: [], dayName: null, dateKey: null };
+    
+    let cycleDaysCache = {}; // تخزين تفاصيل أيام الدورة بالكامل بالـ dateKey
 
-    form.addEventListener('submit', (e) => {
-        e.preventDefault(); // منع الإرسال التقليدي للصفحة
-        statusDiv.style.backgroundColor = '#fff3cd';
-        statusDiv.style.color = '#856404';
-        statusDiv.textContent = "جاري الحفظ، يرجى الانتظار...";
+    const JS_DAY_MAP = {
+        0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت"
+    };
+     
+    const MONTH_MAP = {
+        "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5, 
+        "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11,
+        "ينايـر": 0, "فبرايـر": 1, "مـارس": 2, "إبريـل": 3, "مايـو": 4, "يونيـو": 5, 
+        "يوليـو": 6, "أغسطـس": 7, "سبتمبـر": 8, "أكتوبـر": 9, "نوفمبـر": 10, "ديسمبـر": 11 
+    };
 
-        const name = document.getElementById('name').value;
-        const message = document.getElementById('message').value;
+    function parseRegistrationDate(timeString) {
+        if (!timeString) return null;
+        const datePart = timeString.split(' – ')[0].trim();
+        const parts = datePart.split(' ');
+        if (parts.length < 3) return null;
+        const day = parseInt(parts[0]);
+        const monthName = parts[1].trim().replace(/[\u200e\u200f\s]/g, ''); 
+        const month = MONTH_MAP[monthName];
+        const year = parseInt(parts[2]);
+        if (isNaN(day) || month === undefined || isNaN(year)) return null;
+        const date = new Date(year, month, day);
+        date.setHours(0, 0, 0, 0); 
+        return date;
+    }
+    
+    // ----------------------------------------------------------------
+    // 2. دوال تحديد الأسابيع والدورة الشهرية 
+    // ----------------------------------------------------------------
+    
+    function getCurrentAttendanceCycle() {
+        const today = new Date();
+        let startDate, endDate;
 
-        // ⚠️ مهم: الآن يتم الحفظ في مجموعة "user_messages" (بالإنجليزية)
-        db.collection("user_messages").add({
-            الاسم: name,
-            الرسالة: message,
-            التاريخ: firebase.firestore.FieldValue.serverTimestamp()
-        })
-        .then(() => {
-            statusDiv.style.backgroundColor = '#d4edda';
-            statusDiv.style.color = '#155724';
-            statusDiv.textContent = "✅ تم حفظ الرسالة بنجاح!";
-            form.reset(); // تفريغ النموذج
-        })
-        .catch((error) => {
-            statusDiv.style.backgroundColor = '#f8d7da';
-            statusDiv.style.color = '#721c24';
-            statusDiv.textContent = "❌ حدث خطأ في الحفظ: " + error.message;
-            console.error("خطأ في الحفظ: ", error);
+        if (today.getDate() <= 25) {
+            startDate = new Date(today.getFullYear(), today.getMonth() - 1, 26);
+            endDate = new Date(today.getFullYear(), today.getMonth(), 25);
+        } else {
+            startDate = new Date(today.getFullYear(), today.getMonth(), 26);
+            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 25);
+        }
+        
+        startDate.setHours(0, 0, 0, 0); 
+        endDate.setHours(23, 59, 59, 999); 
+
+        const dateFormatter = new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+        const startStr = dateFormatter.format(startDate);
+        const endStr = dateFormatter.format(endDate);
+
+        return { 
+            startDate: startDate,
+            endDate: endDate,
+            display: `${startStr} حتى ${endStr}`,
+        };
+    }
+
+    function calculateWorkingWeeks(startDate, endDate) {
+        const weeks = [];
+        let currentDate = new Date(startDate);
+        currentDate.setHours(0, 0, 0, 0); 
+        
+        let tempDate = new Date(startDate);
+        let startDayIndex = tempDate.getDay(); 
+        
+        while (startDayIndex !== 6) { 
+            tempDate.setDate(tempDate.getDate() - 1);
+            startDayIndex = tempDate.getDay();
+        }
+        currentDate = tempDate; 
+
+        while (currentDate.getTime() <= endDate.getTime() + (7 * 24 * 60 * 60 * 1000)) { 
+            let currentWeekDays = [];
+            let weekStartDate = new Date(currentDate);
+
+            for (let i = 0; i < 7; i++) {
+                const day = new Date(currentDate);
+                const arabicDay = JS_DAY_MAP[day.getDay()];
+
+                if (day.getTime() >= startDate.getTime() && day.getTime() <= endDate.getTime()) {
+                    const dayInfo = {
+                        date: day,
+                        dayName: arabicDay,
+                        dateKey: day.toDateString(),
+                        isWorkingDay: WORKING_DAYS.includes(arabicDay)
+                    };
+                    currentWeekDays.push(dayInfo);
+                    // تخزين اليوم في الكاش ليتم استخدامه لاحقاً في viewDay
+                    cycleDaysCache[dayInfo.dateKey] = dayInfo; 
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            const workingDaysInWeek = currentWeekDays.filter(d => d.isWorkingDay);
+            
+            if (workingDaysInWeek.length > 0) {
+                weeks.push({
+                    index: weeks.length + 1,
+                    days: workingDaysInWeek, 
+                    startDisplay: workingDaysInWeek[0].date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }),
+                    endDisplay: workingDaysInWeek[workingDaysInWeek.length - 1].date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' }),
+                    weekStartDate: weekStartDate.toLocaleDateString('ar-EG'),
+                });
+            }
+        }
+        return weeks;
+    }
+
+    // تهيئة أزرار الأسابيع
+    function initializeWeeksButtons() {
+        const cycle = getCurrentAttendanceCycle();
+        cycleWeeks = calculateWorkingWeeks(cycle.startDate, cycle.endDate);
+        const container = document.getElementById('week-buttons-container');
+        container.innerHTML = '';
+        
+        document.getElementById('week-title-area').textContent = `🗓️ عرض الحضور حسب الأسبوع (الفترة: ${cycle.display})`;
+
+        if (cycleWeeks.length === 0) {
+            container.innerHTML = '<p class="status-default-muted">لا توجد أسابيع عمل كاملة أو جزئية في هذه الدورة.</p>';
+            document.getElementById('week-details').innerHTML = '<p>لا توجد أسابيع لعرضها.</p>';
+            return;
+        }
+
+        cycleWeeks.forEach(week => {
+            const button = document.createElement('button');
+            button.id = `btn-week-${week.index}`;
+            button.textContent = `أسبوع ${week.index} (${week.startDisplay} - ${week.endDisplay})`;
+            button.onclick = () => viewWeek(week);
+            container.appendChild(button);
         });
-    });
+        
+        viewWeek(cycleWeeks[0]);
+    }
+
+
+    // ----------------------------------------------------------------
+    // 3. وظيفة جلب البيانات وعرض الأسبوع والأيام
+    // ----------------------------------------------------------------
+
+    async function fetchAttendanceData() {
+        const resultArea = document.getElementById('result-area');
+        resultArea.innerHTML = '<p style="color:#007bff;">جاري جلب البيانات من Firebase...</p>';
+
+        allAttendanceData = {}; 
+
+        try {
+            const snapshot = await db.collection("user_attendance").get();
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const name = data.volunteerName;
+                
+                let recordDate;
+                let recordTimePart = data.registrationTime ? data.registrationTime.split(' – ')[1] : '';
+
+                if (data.registrationDateTimestamp && typeof data.registrationDateTimestamp.toDate === 'function') {
+                    recordDate = data.registrationDateTimestamp.toDate();
+                } else if (data.registrationTime) {
+                    recordDate = parseRegistrationDate(data.registrationTime);
+                } else {
+                    return;
+                }
+                
+                if(!recordDate) return;
+                
+                const dateKey = recordDate.toDateString(); 
+
+                if (!allAttendanceData[dateKey]) {
+                    allAttendanceData[dateKey] = {};
+                }
+                
+                allAttendanceData[dateKey][name] = { 
+                    status: data.status, 
+                    reason: data.reason,
+                    time: recordTimePart 
+                };
+            });
+
+            resultArea.innerHTML = `<p class="status-present">✅ **تم تحديث الجدول بنجاح.** (تم جلب ${snapshot.docs.length} سجل)</p>`;
+            
+            if(cycleWeeks.length > 0) {
+                 const activeWeekButton = document.querySelector('.week-buttons button.active');
+                 if (activeWeekButton) {
+                     const weekIndexMatch = activeWeekButton.textContent.match(/أسبوع (\d+)/);
+                     if (weekIndexMatch) {
+                         const weekIndex = parseInt(weekIndexMatch[1]);
+                         const activeWeek = cycleWeeks.find(w => w.index === weekIndex);
+                         if (activeWeek) {
+                              const activeDayButton = document.querySelector('.day-buttons button.active');
+                              if (activeDayButton) {
+                                  const activeDateKey = activeDayButton.getAttribute('data-date-key');
+                                  viewWeek(activeWeek); 
+                                  if (activeDateKey) {
+                                       viewDay(activeDateKey);
+                                       return;
+                                  }
+                             }
+                         }
+                     }
+                 }
+                viewWeek(cycleWeeks[0]);
+            }
+
+        } catch (error) {
+            resultArea.innerHTML = `<p class="status-absent">❌ **خطأ في جلب البيانات:** ${error.message}</p>`;
+            console.error("خطأ في جلب البيانات: ", error);
+        }
+    }
+    
+    async function initializeWeeksAndFetchData() {
+         initializeWeeksButtons(); 
+         await fetchAttendanceData();
+    }
+    
+    // وظيفة عرض تفاصيل الأسبوع (التي تحتوي على أزرار الأيام)
+    function viewWeek(week) {
+        const weekDetailsDiv = document.getElementById('week-details');
+        
+        document.querySelectorAll('.week-buttons button').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(`btn-week-${week.index}`).classList.add('active');
+        
+        let weekHeader = `
+            <h3>ملخص الأسبوع ${week.index}: من ${week.startDisplay} إلى ${week.endDisplay}</h3>
+            <div id="day-buttons-container" class="day-buttons" style="margin-bottom: 15px;">
+                <h4>اختر اليوم:</h4>
+        `;
+        
+        week.days.forEach(dayInfo => {
+            const displayDate = dayInfo.date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
+             // 💡 نمرر فقط المفتاح النصي (dateKey)
+            weekHeader += `<button class="day-btn" data-date-key="${dayInfo.dateKey}" onclick="viewDay('${dayInfo.dateKey}')">${dayInfo.dayName} (${displayDate})</button>`; 
+        });
+        
+        weekHeader += `</div><div id="day-attendance-area"></div>`;
+        weekDetailsDiv.innerHTML = weekHeader;
+        
+        // الانتقال تلقائياً لعرض اليوم الأول من الأسبوع
+        if (week.days.length > 0) {
+            viewDay(week.days[0].dateKey);
+        }
+    }
+
+    // وظيفة عرض تفاصيل يوم واحد
+    function viewDay(dateKey) {
+        const dayInfo = cycleDaysCache[dateKey]; 
+        if (!dayInfo) return; 
+        
+        const dayAttendanceArea = document.getElementById('day-attendance-area');
+        const arabicDate = dayInfo.date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        
+        document.querySelectorAll('.day-buttons button').forEach(btn => btn.classList.remove('active'));
+        document.querySelector(`button[data-date-key='${dateKey}']`)?.classList.add('active');
+
+        let tableHTML = `
+            <h4> حضور يوم: ${arabicDate} </h4>
+            <div class="action-buttons">
+                <button id="whatsapp-day-button" onclick="sendAttendanceListViaWhatsApp()"> 📲 إرسال قائمة الحضور ليوم ${dayInfo.dayName} عبر واتساب </button>
+            </div>
+            <table class="weekly-table" id="daily-attendance-table">
+                <thead>
+                    <tr>
+                        <th style="text-align:right;">الاسم</th>
+                        <th>الحالة</th>
+                        <th>ملاحظات/وقت التسجيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        let finalAttendanceNames = []; // قائمة بأسماء الحاضرين فقط لزر الواتساب
+        
+        VOLUNTEER_NAMES_ORDERED.forEach(name => {
+            const isFixed = FIXED_VOLUNTEERS[name].includes(dayInfo.dayName);
+            const recordedStatus = allAttendanceData[dateKey] ? allAttendanceData[dateKey][name] : null;
+
+            let displayStatus;
+            let statusClass = '';
+            let notes = '';
+            
+            const isAttending = (isFixed && (!recordedStatus || recordedStatus.status !== 'اعتذار')) || 
+                                (recordedStatus && recordedStatus.status === 'حضور');
+
+
+            if (!isFixed && !recordedStatus) {
+                // غير مجدول ولا يوجد سجل = غير مجدول
+                displayStatus = 'غير مجدول';
+                statusClass = 'status-not-scheduled';
+                notes = '-';
+            } else if (recordedStatus) {
+                // يوجد سجل (حضور أو اعتذار)
+                notes = recordedStatus.time || recordedStatus.reason || '-';
+                if (recordedStatus.status === 'اعتذار') {
+                    displayStatus = 'اعتذار ❌';
+                    statusClass = 'status-absent';
+                } else { 
+                    displayStatus = 'حضور ✅';
+                    statusClass = 'status-present';
+                }
+            } else {
+                // مجدول ولا يوجد سجل = حضور افتراضي
+                displayStatus = 'حضور (افتراضي) ✅';
+                statusClass = 'status-present';
+                notes = 'مجدول (افتراضي)';
+            }
+            
+            if (isAttending) {
+                finalAttendanceNames.push(name);
+            }
+
+            tableHTML += `
+                <tr>
+                    <td style="text-align:right;">${name}</td>
+                    <td class="${statusClass}">${displayStatus}</td>
+                    <td>${notes}</td>
+                </tr>
+            `;
+        });
+
+        tableHTML += `</tbody></table>`;
+        dayAttendanceArea.innerHTML = tableHTML;
+        
+        // تحديث المتغير الخاص بالواتساب
+        currentDayWhatsAppList.names = finalAttendanceNames;
+        currentDayWhatsAppList.dayName = dayInfo.dayName;
+        currentDayWhatsAppList.dateKey = dateKey;
+        
+        // 💡 تحديث زر الواتساب ليظهر العدد
+        document.getElementById('whatsapp-day-button').textContent = `📲 إرسال قائمة الحضور ليوم ${dayInfo.dayName} عبر واتساب (${finalAttendanceNames.length} متطوع)`;
+    }
+
+    // ----------------------------------------------------------------
+    // 4. وظائف الواتساب (تمت استعادتها لتنسيق الكود القديم)
+    // ----------------------------------------------------------------
+
+    function getTomorrowDateString() {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1); 
+        const dateString = tomorrow.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
+        return dateString;
+    }
+
+    function sendAttendanceListViaWhatsApp() {
+        if (!currentDayWhatsAppList.dayName) return;
+
+        const day = currentDayWhatsAppList.dayName;
+        const attendanceList = currentDayWhatsAppList.names;
+        
+        // 💡 استخدام دالة getTomorrowDateString كما كانت في الكود القديم
+        const dateString = getTomorrowDateString(); 
+        let listText = attendanceList.map((name, index) => `${index + 1}. ${name}`).join('\n');
+        
+        if (attendanceList.length === 0) {
+            listText = "لا يوجد حضور مؤكد لهذا اليوم.";
+        }
+        
+        const message = `
+📌 قائمة الحضور اليومية
+🗓️ اليوم : ${day} - ${dateString}
+🕒 معاد الشغل: ٣ العصر
+👥 إجمالي المتطوعين : ${attendanceList.length}
+
+---
+قائمة المتطوعين الحاضرين اليوم:
+${listText}
+`;
+        
+        const encodedMessage = encodeURIComponent(message.trim());
+        const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+        const sendButton = document.getElementById('whatsapp-day-button');
+        sendButton.textContent = '✅ جاري فتح الواتساب...';
+        
+        window.open(whatsappUrl, '_blank');
+        
+        setTimeout(() => {
+             sendButton.textContent = `📲 إرسال قائمة الحضور ليوم ${day} عبر واتساب (${attendanceList.length} متطوع)`;
+        }, 5000);
+    }
+    
+    // ----------------------------------------------------------------
+    // 5. وظائف التقرير الشهري (لم تتغير)
+    // ----------------------------------------------------------------
+
+    function getDaysInCycle(start, end) {
+        const cycleDays = [];
+        let currentDate = new Date(start);
+        currentDate.setHours(0, 0, 0, 0); 
+        
+        while (currentDate.getTime() <= end.getTime()) { 
+            const jsDayIndex = currentDate.getDay();
+            const arabicDay = JS_DAY_MAP[jsDayIndex];
+
+            if (WORKING_DAYS.includes(arabicDay)) {
+                cycleDays.push({
+                    date: new Date(currentDate), 
+                    day: arabicDay 
+                });
+            }
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+        return cycleDays;
+    }
+    
+    async function calculateMonthlyAttendance() {
+        const monthlyReportArea = document.getElementById('monthly-report-area');
+        monthlyReportArea.innerHTML = '<p style="color:#007bff;">جاري جلب وفلترة السجلات التاريخية لحساب التقرير...</p>';
+
+        try {
+            if (Object.keys(allAttendanceData).length === 0) {
+                 await fetchAttendanceData();
+            }
+
+            const cycle = getCurrentAttendanceCycle();
+            const cycleDays = getDaysInCycle(cycle.startDate, cycle.endDate); 
+            
+            const CLEAN_REPORT = {};
+            VOLUNTEER_NAMES_ORDERED.forEach(name => {
+                CLEAN_REPORT[name] = { expected: 0, attended: 0, apologies: 0, absence: 0 };
+            });
+
+            const attendanceMap = new Map();
+            
+            // إعادة تجميع البيانات لتشمل التاريخ الفعلي في الدورة الشهرية
+            for (const dateKey in allAttendanceData) {
+                const recordDate = new Date(dateKey);
+                // استخدام الـ cycle.startDate/endDate كأشياء تاريخ للمقارنة
+                if (recordDate.getTime() >= cycle.startDate.getTime() && recordDate.getTime() <= cycle.endDate.getTime()) {
+                     for (const name in allAttendanceData[dateKey]) {
+                        if (!attendanceMap.has(name)) {
+                            attendanceMap.set(name, new Map());
+                        }
+                        attendanceMap.get(name).set(dateKey, allAttendanceData[dateKey][name].status);
+                    }
+                }
+            }
+            
+            VOLUNTEER_NAMES_ORDERED.forEach(name => {
+                const report = CLEAN_REPORT[name];
+                
+                let scheduledPresent = 0;
+                let scheduledApology = 0;
+                let explicitPresent = 0;
+                
+                cycleDays.forEach(dayInfo => {
+                    const dateKey = dayInfo.date.toDateString();
+                    const dayArabic = dayInfo.day;
+                    const status = attendanceMap.get(name)?.get(dateKey);
+
+                    if (FIXED_VOLUNTEERS[name].includes(dayArabic)) { 
+                        report.expected++;
+                        
+                        if (status === 'حضور') {
+                            scheduledPresent++; 
+                        } else if (status === 'اعتذار') {
+                            scheduledApology++; 
+                        } else {
+                            scheduledPresent++; 
+                        }
+                    } else { 
+                        if (status === 'حضور') {
+                            explicitPresent++; 
+                        }
+                    }
+                });
+
+                report.attended = scheduledPresent + explicitPresent; 
+                report.apologies = scheduledApology; 
+                
+                report.absence = report.expected - scheduledPresent - scheduledApology;
+                
+                if (report.expected === 0) {
+                     report.absence = 0;
+                }
+            });
+
+            finalMonthlyReportData.cycleDisplay = cycle.display;
+            finalMonthlyReportData.data = CLEAN_REPORT;
+
+            let tableHTML = `
+                <h3>تقرير الحضور (الحساب وفقاً لقواعد العمل)</h3>
+                <div class="monthly-summary">
+                    <p>تم الحساب بناءً على قاعدة **"المجدول حاضر ما لم يعتذر، والحضور الصريح يحسب دائماً"** للفترة:</p>
+                    <p>📅 **${cycle.display}**</p>
+                    <div class="action-buttons" style="margin-bottom: 0;">
+                        <button id="copy-monthly-button" onclick="copyMonthlyTableContent()"> نسخ التقرير (الحضور المحتسب فقط) </button>
+                    </div>
+                </div>
+                
+                <table class="monthly-table">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الأيام المتوقعة (مجدول)</th>
+                            <th>الحضور المحتسب (الفعلي + الافتراضي)</th>
+                            <th>الاعتذار المسجل (الفعلي)</th>
+                            <th>الغياب المجدول</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            VOLUNTEER_NAMES_ORDERED.forEach(name => {
+                const report = CLEAN_REPORT[name];
+                
+                tableHTML += `
+                    <tr>
+                        <td>${name}</td>
+                        <td>${report.expected} أيام</td>
+                        <td class="status-present">${report.attended} أيام</td>
+                        <td class="status-absent">${report.apologies} أيام</td>
+                        <td>${report.absence} أيام</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `</tbody></table>`;
+            
+            monthlyReportArea.innerHTML = tableHTML;
+            
+        } catch(error) {
+             monthlyReportArea.innerHTML = `<p class="status-absent">❌ **خطأ فادح في معالجة البيانات:** ${error.message}. يرجى مراجعة Console لمزيد من التفاصيل.</p>`;
+             console.error("Critical Error in Monthly Calculation:", error);
+        }
+    }
+
+    function copyMonthlyTableContent() {
+        if (!finalMonthlyReportData.data || Object.keys(finalMonthlyReportData.data).length === 0) {
+             alert('❌ الرجاء الضغط على "التقرير الشهري الدقيق" أولاً لحساب البيانات.');
+             return;
+        }
+
+        const cycleDisplay = finalMonthlyReportData.cycleDisplay;
+        const reportData = finalMonthlyReportData.data;
+        
+        let textToCopy = `تقرير الحضور الشهري للفترة ${cycleDisplay}\n\n`;
+        textToCopy += '------------------------------------------\n';
+        
+        VOLUNTEER_NAMES_ORDERED.forEach(name => {
+            const report = reportData[name];
+            if (report) {
+                textToCopy += `${name}\t: ${report.attended} أيام حضور\n`;
+            }
+        });
+
+        navigator.clipboard.writeText(textToCopy.trim())
+            .then(() => {
+                alert(`✅ تم نسخ التقرير الشهري بنجاح!`);
+            })
+            .catch(err => {
+                console.error('فشل في النسخ:', err);
+                alert('❌ فشل في نسخ التقرير. قد لا يدعم المتصفح هذه الميزة.');
+            });
+    }
+
+    window.onload = initializeWeeksAndFetchData;
 </script>
 
 </body>
