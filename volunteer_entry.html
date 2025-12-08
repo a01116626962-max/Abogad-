@@ -34,6 +34,7 @@
             margin-bottom: 8px;
             font-weight: bold;
         }
+        /* تعديل أنماط حقول الإدخال لتلائم التصميم */
         select, input[type="text"], input[type="time"] {
             width: 100%;
             padding: 10px;
@@ -45,6 +46,28 @@
             direction: rtl;
             text-align: right;
         }
+        /* تنسيق حاوية مربعات الاختيار الجديدة */
+        #dates-checkbox-container {
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .date-checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            cursor: pointer;
+        }
+        .date-checkbox-item input[type="checkbox"] {
+            /* تعديل اتجاه الـ checkbox في بيئة RTL */
+            margin-left: 10px; 
+            margin-right: 0;
+            width: auto;
+            margin-bottom: 0;
+        }
         button {
             padding: 12px 20px;
             color: white;
@@ -54,6 +77,7 @@
             background-color: #28a745;
             transition: background-color 0.3s;
             font-size: 1.1em;
+            width: 100%; /* جعل الزر بعرض كامل */
         }
         button:hover {
             background-color: #218838;
@@ -103,8 +127,8 @@
             display: none;
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
 <body>
 
@@ -116,7 +140,7 @@
         <label for="volunteer-name">الاسم:</label>
         <select id="volunteer-name" required>
             <option value="">اختر اسمك</option>
-            </select>
+        </select>
 
         <label for="registration-type">نوع التسجيل:</label>
         <select id="registration-type" onchange="toggleApologyFields()" required>
@@ -124,18 +148,18 @@
             <option value="اعتذار">اعتذار</option>
         </select>
 
-        <label for="selected-date">اليوم/التاريخ:</label>
-        <select id="selected-date" required>
-            </select>
+        <label>اليوم/التاريخ (يمكن اختيار عدة أيام):</label>
+        <div id="dates-checkbox-container" onchange="toggleApologyFields()">
+            </div>
         
         <div id="apology-container" class="apology-fields">
             <h4>تفاصيل الاعتذار</h4>
             <label for="apology-reason">سبب الاعتذار:</label>
-            <input type="text" id="apology-reason" placeholder="مثال: ظروف طارئة، مرض" disabled>
+            <input type="text" id="apology-reason" placeholder="مثال: ظروف طارئة، مرض">
             
             <div id="late-apology-field" style="display:none;">
-                <label for="late-reason">سبب تأخر الاعتذار (إذا كان بعد الموعد):</label>
-                <input type="text" id="late-reason" placeholder="مثال: لم أستطع الوصول للموبايل" disabled>
+                <label for="late-reason">سبب تأخر الاعتذار (إذا كان أحد الأيام هو اليوم):</label>
+                <input type="text" id="late-reason" placeholder="مثال: لم أستطع الوصول للموبايل">
             </div>
         </div>
 
@@ -147,7 +171,7 @@
 </div>
 
 <script>
-    // ⚠️ مفاتيح Firebase
+    // ⚠️ مفاتيح Firebase (تم تركها كما هي ليعمل الكود بشكل صحيح)
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -163,7 +187,6 @@
     // رقم الواتساب الذي سيتم إرسال الرسالة إليه
     const whatsappNumber = "201223314173"; 
     
-    // المتطوعين وأيام عملهم (مكررة للتأكد من التناسق)
     const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
 
     const FIXED_VOLUNTEERS = {
@@ -176,7 +199,7 @@
     };
 
     const JS_DAY_MAP = {
-        0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الثلاثاء", 4: "الأربعاء", 5: "الخميس", 6: "الجمعة", 7: "السبت"
+        0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت"
     };
     
     const MONTH_MAP = [
@@ -186,18 +209,15 @@
     
     /**
      * دالة مساعدة لتنسيق التاريخ إلى (يوم_الشهر اسم_الشهر السنة)
-     * @param {Date} date - كائن التاريخ
-     * @returns {string} التاريخ المنسق
      */
     function formatDateDisplay(date) {
-        const dayOfWeek = JS_DAY_MAP[date.getDay() === 0 ? 7 : date.getDay()]; // تصحيح الأحد
+        const dayOfWeek = JS_DAY_MAP[date.getDay()]; 
         const dayOfMonth = date.getDate();
         const monthName = MONTH_MAP[date.getMonth()];
         const year = date.getFullYear();
         
         let display = `${dayOfWeek} (${dayOfMonth} ${monthName} ${year})`;
         
-        // التحقق إذا كان اليوم هو اليوم الحالي
         const today = new Date();
         if (date.toDateString() === today.toDateString()) {
             display += " - اليوم";
@@ -208,8 +228,6 @@
 
     /**
      * دالة مساعدة لتنسيق التاريخ إلى مفتاح ثابت (YYYY-MM-DD)
-     * @param {Date} date - كائن التاريخ
-     * @returns {string} مفتاح التاريخ (مثال: 2025-12-08)
      */
      function formatDateKey(date) {
         const year = date.getFullYear();
@@ -219,14 +237,15 @@
     }
 
     // ----------------------------------------------------------------
-    // وظيفة تهيئة القوائم المنسدلة
+    // وظيفة تهيئة القوائم المنسدلة (تم تحديثها لإنشاء مربعات اختيار)
     // ----------------------------------------------------------------
 
     function initializeForm() {
         const nameSelect = document.getElementById('volunteer-name');
-        const dateSelect = document.getElementById('selected-date');
+        const dateContainer = document.getElementById('dates-checkbox-container');
+        dateContainer.innerHTML = ''; // تفريغ الحاوية قبل الإضافة
         
-        // إضافة أسماء المتطوعين
+        // 1. إضافة أسماء المتطوعين
         Object.keys(FIXED_VOLUNTEERS).sort().forEach(name => {
             const option = document.createElement('option');
             option.value = name;
@@ -234,7 +253,7 @@
             nameSelect.appendChild(option);
         });
 
-        // إضافة التواريخ (اليوم الحالي + 10 أيام قادمة)
+        // 2. إضافة مربعات اختيار التواريخ (اليوم الحالي + 10 أيام قادمة)
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -242,16 +261,31 @@
             const date = new Date(today);
             date.setDate(today.getDate() + i);
             
-            const option = document.createElement('option');
-            option.value = date.toDateString(); // نستخدم toDateString كمفتاح فريد
-            option.setAttribute('data-date-key', formatDateKey(date)); // مفتاح ثابت YYYY-MM-DD
-            option.textContent = formatDateDisplay(date);
-            dateSelect.appendChild(option);
+            const dateKey = formatDateKey(date);
+            const dateDisplay = formatDateDisplay(date);
+
+            const div = document.createElement('div');
+            div.className = 'date-checkbox-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `date-${dateKey}`;
+            checkbox.name = 'selected-dates';
+            checkbox.value = dateKey;
+            checkbox.setAttribute('data-date-display', dateDisplay);
+            
+            const label = document.createElement('label');
+            label.htmlFor = `date-${dateKey}`;
+            label.textContent = dateDisplay;
+
+            div.appendChild(checkbox);
+            div.appendChild(label);
+            dateContainer.appendChild(div);
         }
     }
 
     // ----------------------------------------------------------------
-    // وظيفة إظهار/إخفاء حقول الاعتذار
+    // وظيفة إظهار/إخفاء حقول الاعتذار (تم تحديثها للتعامل مع التحديد المتعدد)
     // ----------------------------------------------------------------
     
     function toggleApologyFields() {
@@ -260,42 +294,43 @@
         const apologyReason = document.getElementById('apology-reason');
         const lateReason = document.getElementById('late-reason');
         const lateApologyField = document.getElementById('late-apology-field');
-        const selectedDateKey = document.getElementById('selected-date').value;
         
-        const selectedDateOption = document.querySelector(`#selected-date option[value='${selectedDateKey}']`);
-        const selectedDate = selectedDateOption ? new Date(selectedDateOption.value) : new Date();
-
         // 1. إظهار/إخفاء حاوية الاعتذار
         if (type === 'اعتذار') {
             apologyContainer.style.display = 'block';
-            apologyReason.disabled = false;
             apologyReason.required = true;
+            apologyReason.disabled = false;
         } else {
             apologyContainer.style.display = 'none';
-            apologyReason.disabled = true;
             apologyReason.required = false;
-            lateReason.disabled = true;
-            lateReason.required = false;
+            apologyReason.disabled = true;
         }
 
-        // 2. إظهار/إخفاء حقل التأخر
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // 2. التحقق من اختيار اليوم الحالي لإظهار حقل التأخر
+        const todayKey = formatDateKey(new Date());
+        const selectedCheckboxes = document.querySelectorAll('#dates-checkbox-container input[type="checkbox"]:checked');
+        let isTodaySelected = false;
+
+        selectedCheckboxes.forEach(checkbox => {
+            if (checkbox.value === todayKey) {
+                isTodaySelected = true;
+            }
+        });
         
-        if (type === 'اعتذار' && selectedDate.toDateString() === today.toDateString()) {
-            // إذا كان اعتذاراً عن اليوم الحالي (افتراضاً هو متأخر)
+        if (type === 'اعتذار' && isTodaySelected) {
+            // إذا كان اعتذاراً وتم اختيار اليوم الحالي
             lateApologyField.style.display = 'block';
-            lateReason.disabled = false;
             lateReason.required = true;
+            lateReason.disabled = false;
         } else {
             lateApologyField.style.display = 'none';
-            lateReason.disabled = true;
             lateReason.required = false;
+            lateReason.disabled = true;
         }
     }
 
     // ----------------------------------------------------------------
-    // وظيفة تسجيل الحضور في قاعدة البيانات والواتساب
+    // وظيفة تسجيل الحضور في قاعدة البيانات والواتساب (تم تحديثها للتسجيل المتعدد)
     // ----------------------------------------------------------------
     
     document.getElementById('attendance-form').addEventListener('submit', function(e) {
@@ -306,22 +341,31 @@
     async function registerAttendance() {
         const name = document.getElementById('volunteer-name').value;
         const status = document.getElementById('registration-type').value;
-        const selectedDateKey = document.getElementById('selected-date').value;
-        
-        // الحصول على التاريخ الصحيح من القائمة المنسدلة
-        const selectedDateOption = document.querySelector(`#selected-date option[value='${selectedDateKey}']`);
-        const dateKeyYYYYMMDD = selectedDateOption ? selectedDateOption.getAttribute('data-date-key') : formatDateKey(new Date());
-        
-        const dateObject = new Date(selectedDateKey);
-        const submissionTime = new Date(); // وقت إرسال النموذج الآن
+        const submissionTime = new Date(); 
 
-        let reason = '';
+        const selectedDatesElements = document.querySelectorAll('#dates-checkbox-container input[type="checkbox"]:checked');
+        
+        if (selectedDatesElements.length === 0) {
+            alert('يجب اختيار يوم/تاريخ واحد على الأقل.');
+            return;
+        }
+
+        let apologyReason = '';
+        let lateReason = '';
+        let fullReason = '';
+        
         if (status === 'اعتذار') {
-            const apologyReason = document.getElementById('apology-reason').value;
-            const lateReason = document.getElementById('late-reason').value;
-            reason = apologyReason;
-            if (lateReason) {
-                reason += ` (تأخر: ${lateReason})`;
+            apologyReason = document.getElementById('apology-reason').value;
+            lateReason = document.getElementById('late-reason').value;
+
+            fullReason = apologyReason;
+            if (lateReason && document.querySelector(`#date-${formatDateKey(new Date())}:checked`)) {
+                 // إضافة سبب التأخر فقط إذا كان اليوم الحالي محدداً
+                fullReason += ` (تأخر: ${lateReason})`;
+            }
+            if (!apologyReason) {
+                alert('يرجى إدخال سبب الاعتذار.');
+                return;
             }
         }
         
@@ -330,66 +374,86 @@
         messageDiv.style.display = 'none';
         whatsappContainer.style.display = 'none';
         
-        try {
-            const docId = `${name}_${dateKeyYYYYMMDD}`;
-            
-            // 💡 البيانات التي سيتم حفظها في Firebase
-            const dataToSave = {
-                volunteerName: name,
-                status: status,
-                reason: reason,
-                // يتم حفظ التاريخ الذي تم اختياره (وليس تاريخ التسجيل) ليعمل التقرير الشهري
-                registrationDateTimestamp: firebase.firestore.Timestamp.fromDate(dateObject), 
-                // مفتاح تاريخ ثابت (للعرض في لوحة التحكم)
-                dateKey: dateKeyYYYYMMDD, 
-                // وقت التسجيل الفعلي (للعرض في لوحة التحكم - ملاحظات)
-                registrationTime: dateObject.toLocaleDateString('ar-EG') + ' – ' + submissionTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
-                timestamp: firebase.firestore.FieldValue.serverTimestamp() // طابع زمني دقيق لوقت الإرسال
-            };
+        const selectedDatesData = [];
 
-            await db.collection("user_attendance").doc(docId).set(dataToSave, { merge: true });
+        try {
+            // 💡 تسجيل كل يوم بشكل منفصل في Firebase
+            for (const element of selectedDatesElements) {
+                const dateKeyYYYYMMDD = element.value;
+                const dateDisplay = element.getAttribute('data-date-display');
+                const docId = `${name}_${dateKeyYYYYMMDD}`;
+                const dateObject = new Date(dateKeyYYYYMMDD); // بناء كائن التاريخ من المفتاح YYYY-MM-DD
+                
+                const dataToSave = {
+                    volunteerName: name,
+                    status: status,
+                    reason: fullReason,
+                    registrationDateTimestamp: firebase.firestore.Timestamp.fromDate(dateObject), 
+                    dateKey: dateKeyYYYYMMDD, 
+                    // وقت التسجيل الفعلي
+                    registrationTime: dateDisplay + ' – ' + submissionTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp() 
+                };
+
+                await db.collection("user_attendance").doc(docId).set(dataToSave, { merge: true });
+                
+                selectedDatesData.push({
+                    display: dateDisplay,
+                    key: dateKeyYYYYMMDD
+                });
+            }
 
             messageDiv.className = 'success';
-            messageDiv.textContent = '✅ تم تسجيل بياناتك بنجاح في Firebase.';
+            messageDiv.textContent = `✅ تم تسجيل بيانات ${selectedDatesElements.length} يوم/أيام بنجاح في Firebase.`;
             messageDiv.style.display = 'block';
 
-            // إنشاء رابط الواتساب
-            createWhatsAppLink(name, status, dateObject.toLocaleDateString('ar-EG'), submissionTime, reason);
+            // 🌟 إنشاء رابط الواتساب لكافة الأيام المسجلة
+            createWhatsAppLink(name, status, selectedDatesData, submissionTime, apologyReason, lateReason);
 
         } catch (error) {
             messageDiv.className = 'error';
             messageDiv.textContent = `❌ حدث خطأ أثناء التسجيل: ${error.message}`;
             messageDiv.style.display = 'block';
-            console.error("Error writing document: ", error);
+            console.error("Error writing documents: ", error);
         }
     }
 
     // ----------------------------------------------------------------
-    // وظيفة إنشاء رابط الواتساب
+    // وظيفة إنشاء رابط الواتساب - تم تحديثها لدمج أيام متعددة
     // ----------------------------------------------------------------
     
-    function createWhatsAppLink(name, status, dateDisplay, submissionTime, reason) {
-        const timeDisplay = submissionTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-
+    function createWhatsAppLink(name, status, datesArray, submissionTime, apologyReason, lateReason) {
+        
+        const dateTimeDisplay = `${submissionTime.toLocaleDateString('ar-EG')} ${submissionTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`;
+        
+        let datesList = datesArray.map(d => `• ${d.display}`).join('\n');
+        
         let messageBody = `
 👤 المتطوع: ${name}
 📝 الحالة: **${status}**
-🗓️ التاريخ: ${dateDisplay}
-🕒 وقت التسجيل: ${timeDisplay}
-`;
 
+🗓️ الأيام المسجلة: 
+${datesList}
+
+🕒 وقت التسجيل (الفعلي): ${dateTimeDisplay}
+`;
+        
         if (status === 'اعتذار') {
+            const isTodayInSelection = datesArray.some(d => d.key === formatDateKey(new Date()));
+            
             messageBody += `
-سبب الاعتذار: ${reason}
+
+سبب الاعتذار: ${apologyReason || 'لا يوجد سبب رئيسي'}
+سبب التأخر: ${isTodayInSelection && lateReason ? lateReason : 'لم يتم تسجيل تأخر'}
 `;
         }
-
+        
         const encodedMessage = encodeURIComponent(messageBody.trim());
         const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodedMessage}`;
         
         const container = document.getElementById('whatsapp-link-container');
         container.innerHTML = `
-            <p>للتأكيد، يرجى إرسال البيانات عبر واتساب:</p>
+            <p>للتأكيد، يرجى إرسال بيانات ${datesArray.length} يوم/أيام عبر واتساب:</p>
             <a href="${whatsappUrl}" target="_blank">انقر هنا لإرسال البيانات عبر واتساب 📲</a>
         `;
         container.style.display = 'block';
@@ -397,8 +461,8 @@
 
     window.onload = function() {
         initializeForm();
-        // تأكد من تشغيل toggleApologyFields بعد تحميل القوائم المنسدلة
-        document.getElementById('selected-date').addEventListener('change', toggleApologyFields);
+        // ربط الأحداث بمجرد تحميل النموذج
+        document.getElementById('volunteer-name').addEventListener('change', toggleApologyFields);
         toggleApologyFields();
     };
 
