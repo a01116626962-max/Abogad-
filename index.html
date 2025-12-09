@@ -3,164 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>جدول الحضور الأسبوعي والشهري</title>
+    <title>لوحة بيانات الأنشطة الوقائية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* (الأنماط CSS لم تتغير عن الكود الأخير) */
+        /* ------------------ تصميم عام وخطوط ------------------ */
+        :root {
+            --primary-color: #1976D2;
+            --secondary-color: #00BCD4; 
+            --accent-color: #FFC107;
+            --success-color: #388E3C;
+            --text-color: #333;
+            --bg-color: #f4f7f6;
+        }
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
-            padding: 20px;
-            text-align: right;
+            padding: 15px;
             direction: rtl;
         }
         .container {
+            width: 100%;
             max-width: 1000px;
-            margin: 0 auto;
+            margin: auto;
             background: #fff;
             padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
-        h1, h2, h3 {
-            color: #007bff;
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            font-weight: 700;
+            margin-bottom: 25px;
+        }
+        h2 {
+            font-size: 1.2em;
+            color: var(--primary-color);
             border-bottom: 2px solid #eee;
             padding-bottom: 10px;
             margin-top: 20px;
         }
-        .action-buttons {
-            margin-bottom: 20px;
-        }
-        button {
-            padding: 10px 15px;
+
+        /* ------------------ أزرار التبديل ------------------ */
+        .toggle-button {
+            padding: 12px 25px;
+            background-color: var(--secondary-color);
             color: white;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
-            margin-left: 10px;
-            transition: background-color 0.3s;
-            background-color: #007bff;
-        }
-        button:hover {
-            opacity: 0.9;
-        }
-        /* أزرار الأسابيع */
-        .week-buttons button {
-            background-color: #6c757d;
-            margin: 5px;
+            margin-bottom: 20px;
+            font-size: 1.1em;
             font-weight: bold;
-        }
-        .week-buttons button.active {
-            background-color: #28a745;
-        }
-        /* أزرار الأيام */
-        .day-buttons button {
-            background-color: #17a2b8;
-            margin: 5px 5px 5px 0;
-            font-weight: normal;
-        }
-        .day-buttons button.active {
-            background-color: #007bff;
-        }
-
-        /* جداول الأسبوع والأيام */
-        .weekly-table, .monthly-table {
+            display: block;
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            font-size: 0.95em;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: background-color 0.3s;
         }
-        .weekly-table th, .weekly-table td, .monthly-table th, .monthly-table td {
+        .toggle-button:hover {
+            background-color: #00AABF;
+        }
+        
+        /* ------------------ نماذج الإدخال (التسجيل اليومي) ------------------ */
+        .card {
+            background-color: #fcfcfc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            margin-bottom: 20px;
+        }
+        #data-form {
+            display: grid;
+            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        input:not([type="checkbox"]), select, button {
+            width: 100%;
+            padding: 10px;
             border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center; 
-        }
-        .weekly-table th, .monthly-table th {
-            background-color: #f2f2f2;
-            color: #333;
-        }
-        .weekly-table thead th:first-child, .monthly-table thead th:first-child {
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 1em;
             text-align: right;
         }
-        /* حالات الجدول */
-        .status-absent {
-            background-color: #f8d7da; 
-            color: #721c24; 
+        #add-button {
+            grid-column: 1 / -1;
+            background-color: var(--success-color);
+            color: white;
             font-weight: bold;
         }
-        .status-present {
-            background-color: #d4edda; 
-            color: #155724; 
-            font-weight: bold;
+
+        /* إخفاء حقل عدد الأنشطة */
+        .count-group {
+            display: none;
         }
-        .status-not-scheduled {
-            background-color: #f9f9f9;
-            color: #ccc;
-            font-size: 0.8em;
+        
+        /* ------------------ قسم التقارير (مخفي افتراضيًا) ------------------ */
+        #reports-section {
+            display: none; 
         }
-        /* تنسيق التقرير الشهري */
-        .monthly-summary {
-            background-color: #e9f7ef;
-            border: 1px solid #c8e6c9;
-            padding: 15px;
-            border-radius: 4px;
+        .export-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .date-inputs {
+            display: flex;
+            flex-grow: 1;
+        }
+        #filter-button, #copy-button {
+            padding: 10px 20px;
+            font-weight: 600;
+        }
+        #copy-button {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+        }
+
+        /* ------------------ تصميم الجدول ------------------ */
+        .table-responsive {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            min-width: 600px;
+            border-collapse: separate;
+            border-spacing: 0;
             margin-top: 15px;
         }
-        #copy-monthly-button {
-            background-color: #ffc107; 
-            color: #333;
-            margin-left: 0;
-            margin-right: 10px;
+        th {
+            background-color: var(--primary-color);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
-        #whatsapp-day-button {
-             background-color: #075E54;
-             margin-left: 0;
-             display: block;
-             width: 100%;
-             padding: 15px;
-             margin-top: 20px;
-             font-size: 1.1em;
+        th, td {
+            border: 1px solid #eee;
+            padding: 12px;
+            text-align: right;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #e0f7fa !important;
+            color: var(--primary-color);
+        }
+        
+        /* ------------------ استجابة الجوال ------------------ */
+        @media (max-width: 768px) {
+            #data-form {
+                grid-template-columns: 1fr;
+            }
+            .export-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
         }
     </style>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 </head>
 <body>
 
 <div class="container">
-    <h1>🗓️ جدول الحضور والتقرير الشهري</h1>
+    <h1>لوحة تحكم: إحصائيات الأنشطة الوقائية</h1>
     
-    <div id="result-area" style="margin-top:15px; padding:10px; border:1px solid #eee;">
-        <p style="color:#007bff;">اضغط على "تحديث الجدول" لجلب البيانات من قاعدة البيانات.</p>
+    <button class="toggle-button" onclick="toggleSections()">عرض تقارير وفلاتر الأنشطة 📊</button>
+
+    <div id="entry-section" class="card">
+        <h2>تسجيل نشاط اليوم</h2>
+        <form id="data-form">
+            <div class="form-group"><label for="activity-date">التاريخ:</label><input type="date" id="activity-date" required></div>
+            
+            <div class="form-group">
+                <label for="activity">اسم النشاط:</label>
+                <select id="activity" required>
+                    <option value="" disabled selected>--- اختر النشاط ---</option>
+                    <option value="1- حملات طرق الأبواب">1- حملات طرق الأبواب</option>
+                    <option value="2- لقاءات أسرية">2- لقاءات أسرية</option>
+                    <option value="3- لقاءات دينية - كنائس - مساجد">3- لقاءات دينية - كنائس - مساجد</option>
+                    <option value="4- ميدانية (ميادين عامة - مواقف - المناطق المحيطه - المحال التجارية - الورش الصناعية)">4- ميدانية (ميادين عامة - مواقف - المناطق المحيطه - المحال التجارية - الورش الصناعية)</option>
+                    <option value="5- مهرجانات والأنشطة الرياضية والفنية">5- مهرجانات والأنشطة الرياضية والفنية</option>
+                    <option value="6- ورش عمل للأطفال">6- ورش عمل للأطفال</option>
+                    <option value="7- تدريبات القيادات الطبيعية والشبابية">7- تدريبات القيادات الطبيعية والشبابية</option>
+                    <option value="8- المجمعات الخدمية (المدارس - مراكز الشباب - الجمعيات الأهلية)">8- المجمعات الخدمية (المدارس - مراكز الشباب - الجمعيات الأهلية)</option>
+                    <option value="أخرى">أخرى</option>
+                </select>
+            </div>
+            
+            <div class="form-group count-group"><label for="count">عدد الأنشطة:</label><input type="number" id="count" value="1" readonly></div>
+            
+            <div class="form-group"><label for="beneficiaries">إجمالي المستفيدين:</label><input type="number" id="beneficiaries" placeholder="0" min="0" required></div>
+            
+            <button type="submit" id="add-button">✅ تسجيل النشاط</button>
+        </form>
     </div>
 
-    <div class="action-buttons">
-        <button onclick="initializeWeeksAndFetchData()">تحديث الجدول من قاعدة البيانات</button>
-    </div>
-
-    <hr>
-
-    <h2 id="week-title-area">🗓️ عرض الحضور حسب الأسبوع</h2>
-
-    <div id="week-buttons-container" class="week-buttons">
-        <p>جاري تحميل أسابيع الدورة...</p>
-    </div>
-
-    <div id="week-details">
-        <p>الرجاء اختيار أسبوع لعرض حالة المتطوعين.</p>
-    </div>
-    
-    <hr>
-
-    <h2 onclick="calculateMonthlyAttendance()" style="cursor:pointer;">📊 التقرير الشهري الدقيق (اضغط للحساب)</h2>
-    <div id="monthly-report-area">
-        <p>اضغط على العنوان أعلاه لحساب أيام الحضور والاعتذار للدورة الشهرية الحالية (26 - 25).</p>
+    <div id="reports-section">
+        <h2>فلترة واستخراج التقارير</h2>
+        <div class="card export-controls">
+            <label style="font-weight: bold;">تحديد فترة العرض:</label>
+            <div class="date-inputs">
+                <input type="date" id="filter-from-date" placeholder="من تاريخ">
+                <input type="date" id="filter-to-date" placeholder="إلى تاريخ">
+            </div>
+            <button onclick="renderTable()" id="filter-button">تطبيق الفلتر</button>
+            <button onclick="copySelected()" id="copy-button">نسخ تقرير الأنشطة المحددة</button>
+        </div>
+        
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">تحديد</th>
+                        <th style="width: 120px;">التاريخ</th>
+                        <th>النشاط الوقائي المنفذ</th>
+                        <th style="width: 120px;">إجمالي المستفيد</th>
+                    </tr>
+                </thead>
+                <tbody id="data-table-body">
+                    </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
 <script>
-    // ⚠️ مفاتيح Firebase (تم توحيدها وتصحيحها)
+    const form = document.getElementById('data-form');
+    const tableBody = document.getElementById('data-table-body');
+    const entrySection = document.getElementById('entry-section');
+    const reportsSection = document.getElementById('reports-section');
+    const toggleBtn = document.querySelector('.toggle-button');
+    
+    // ====================================================
+    // 🔑 Firebase Configuration (منسوخة من كود المتطوعين)
+    // ====================================================
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -170,672 +256,221 @@
         appId: "1:219502671343:web:b289b11869e25c9a30321a"
     };
 
-    firebase.initializeApp(firebaseConfig);
+    // تهيئة Firebase و Firestore
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     const db = firebase.firestore();
     
-    // ----------------------------------------------------------------
-    // 1. الإعدادات الثابتة والجدولة
-    // ----------------------------------------------------------------
-    const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+    // 🗄️ اسم مجموعة مستندات جديد لضمان الفصل التام عن بيانات الحضور user_attendance
+    const ACTIVITIES_COLLECTION = 'dashboard_preventive_logs'; 
+    // يمكنك تغيير 'dashboard_preventive_logs' لأي اسم آخر تريده، المهم أن يكون فريداً.
 
-    const FIXED_VOLUNTEERS = {
-        "أحمد": WORKING_DAYS, "هدير": WORKING_DAYS, "محمد إبراهيم": WORKING_DAYS, 
-        "محمد عبدالحميد": WORKING_DAYS, "سامى": ["السبت", "الأحد", "الثلاثاء"], 
-        "ممتاز": WORKING_DAYS, "حبيبة": WORKING_DAYS, "ساندي": [],
-        "رحاب": ["السبت", "الإثنين", "الثلاثاء"], "معاذ": ["الأحد", "الثلاثاء", "الخميس"], 
-        "مازن": WORKING_DAYS, "يوسف": [], "إبراهيم": WORKING_DAYS, 
-        "مروان": [], "عبدالرحمن": [], "معتز": WORKING_DAYS 
-    };
+    // ----------------------------------------------------
+    // وظائف التحكم بالواجهة (التبديل بين قسم الإدخال والتقارير)
+    // ----------------------------------------------------
+    function toggleSections() {
+        const isEntryVisible = entrySection.style.display !== 'none';
+        
+        if (isEntryVisible) {
+            entrySection.style.display = 'none';
+            reportsSection.style.display = 'block';
+            toggleBtn.textContent = '🏠 العودة لتسجيل النشاط اليومي';
+            renderTable(); // عرض الجدول عند التبديل
+        } else {
+            entrySection.style.display = 'block';
+            reportsSection.style.display = 'none';
+            toggleBtn.textContent = 'عرض تقارير وفلاتر الأنشطة 📊';
+        }
+    }
     
-    const VOLUNTEER_NAMES_ORDERED = Object.keys(FIXED_VOLUNTEERS);
+    // ----------------------------------------------------
+    // وظائف Firebase لتحميل وتخزين البيانات
+    // ----------------------------------------------------
     
-    let allAttendanceData = {}; 
-    let cycleWeeks = []; 
-    let finalMonthlyReportData = { cycleDisplay: '', data: {} }; 
-    let currentDayWhatsAppList = { names: [], dayName: null, dateKey: null };
-    let cycleDaysCache = {}; // لتخزين معلومات كل يوم عمل في الدورة
-
-    const JS_DAY_MAP = {
-        0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت"
-    };
-     
-    const MONTH_MAP = {
-        "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5, 
-        "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11,
-        "ينايـر": 0, "فبرايـر": 1, "مـارس": 2, "إبريـل": 3, "مايـو": 4, "يونيـو": 5, 
-        "يوليـو": 6, "أغسطـس": 7, "سبتمبـر": 8, "أكتوبـر": 9, "نوفمبـر": 10, "ديسمبـر": 11 
+    window.onload = function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('activity-date').value = today;
+        entrySection.style.display = 'block';
+        reportsSection.style.display = 'none';
     };
 
     /**
-     * دالة مساعدة لتنسيق التاريخ إلى مفتاح ثابت (YYYY-MM-DD)
-     * @param {Date} date - كائن التاريخ
-     * @returns {string} مفتاح التاريخ (مثال: 2025-12-08)
+     * تحميل البيانات من Firestore مع إمكانية الفلترة
      */
-    function formatDateKey(date) {
-        if (!(date instanceof Date) || isNaN(date)) return null;
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+    async function loadData(fromDateStr = null, toDateStr = null) {
+        let q = db.collection(ACTIVITIES_COLLECTION).orderBy('date', 'desc');
+
+        if (fromDateStr && toDateStr) {
+            q = q
+                .where('date', '>=', fromDateStr)
+                .where('date', '<=', toDateStr);
+        }
+        
+        try {
+            const snapshot = await q.get();
+            return snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
+        } catch (error) {
+            console.error("Error loading data from Firebase:", error);
+            alert("حدث خطأ أثناء تحميل البيانات من قاعدة البيانات.");
+            return [];
+        }
     }
 
-    // 💡 دالة تحليل التاريخ - الأولوية للمفتاح الثابت الجديد
-    function parseRegistrationDate(data) {
-        let recordDate = null;
+    /**
+     * عرض الجدول بناءً على البيانات المحملة
+     */
+    async function renderTable() {
+        const fromDateStr = document.getElementById('filter-from-date').value;
+        const toDateStr = document.getElementById('filter-to-date').value;
         
-        // 1. الأولوية: استخدام الحقل الثابت الجديد YYYY-MM-DD
-        if (data.dateKey && data.dateKey.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            recordDate = new Date(data.dateKey); 
-        } 
+        document.getElementById('filter-button').textContent = 'جاري التحميل...';
+        document.getElementById('filter-button').disabled = true;
+
+        const filteredData = await loadData(fromDateStr, toDateStr);
         
-        // 2. إذا لم يتوفر، استخدم الطابع الزمني (الموجود في السجلات الجديدة)
-        else if (data.registrationDateTimestamp && typeof data.registrationDateTimestamp.toDate === 'function') {
-            recordDate = data.registrationDateTimestamp.toDate();
-        } 
-        
-        // 3. إذا لم يتوفر، استخدم التحليل النصي القديم (للسجلات التاريخية جداً)
-        else if (data.registrationTime) {
-            const timeString = data.registrationTime;
-            const datePart = timeString.split(' – ')[0].trim();
-            const parts = datePart.split(' ');
+        document.getElementById('filter-button').textContent = 'تطبيق الفلتر';
+        document.getElementById('filter-button').disabled = false;
+
+        tableBody.innerHTML = ''; 
+        let totalBeneficiaries = 0;
+
+        filteredData.forEach(item => {
+            const row = tableBody.insertRow();
             
-            if (parts.length >= 3) {
-                const day = parseInt(parts[0]);
-                const monthName = parts[1].trim().replace(/[\u200e\u200f\s]/g, ''); 
-                const month = MONTH_MAP[monthName];
-                const year = parseInt(parts[2]);
-                if (!isNaN(day) && month !== undefined && !isNaN(year)) {
-                    recordDate = new Date(year, month, day);
-                }
-            }
-        }
+            totalBeneficiaries += item.beneficiaries;
+
+            const checkboxCell = row.insertCell();
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            const activityData = {
+                date: item.date,
+                activity: item.activity,
+                count: 1, 
+                beneficiaries: item.beneficiaries 
+            };
+            checkbox.setAttribute('data-activity', JSON.stringify(activityData));
+            checkboxCell.appendChild(checkbox);
+
+            row.insertCell().textContent = item.date;
+            row.insertCell().textContent = item.activity;
+            row.insertCell().textContent = item.beneficiaries.toLocaleString('ar-EG');
+        });
         
-        if (recordDate && !isNaN(recordDate)) {
-             recordDate.setHours(0, 0, 0, 0); 
-             return recordDate;
+        if (filteredData.length > 0) {
+            const totalRow = tableBody.insertRow();
+            totalRow.className = 'total-row';
+            totalRow.insertCell().textContent = 'الإجمالي';
+            totalRow.insertCell().textContent = '';
+            totalRow.insertCell().textContent = filteredData.length.toLocaleString('ar-EG') + ' نشاط';
+            totalRow.insertCell().textContent = totalBeneficiaries.toLocaleString('ar-EG');
         }
-        return null;
-    }
-    
-    // ----------------------------------------------------------------
-    // 2. دوال تحديد الأسابيع والدورة الشهرية 
-    // ----------------------------------------------------------------
-    
-    function getCurrentAttendanceCycle() {
-        const today = new Date();
-        let startDate, endDate;
 
-        if (today.getDate() <= 25) {
-            // الدورة الحالية بدأت في 26 الشهر الماضي
-            startDate = new Date(today.getFullYear(), today.getMonth() - 1, 26);
-            endDate = new Date(today.getFullYear(), today.getMonth(), 25);
-        } else {
-            // الدورة الحالية بدأت في 26 هذا الشهر
-            startDate = new Date(today.getFullYear(), today.getMonth(), 26);
-            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 25);
+        if (filteredData.length === 0 && (fromDateStr || toDateStr)) {
+            const emptyRow = tableBody.insertRow();
+            const cell = emptyRow.insertCell();
+            cell.colSpan = 4;
+            cell.style.textAlign = 'center';
+            cell.textContent = 'لا توجد بيانات مسجلة في هذه الفترة.';
         }
-        
-        startDate.setHours(0, 0, 0, 0); 
-        endDate.setHours(23, 59, 59, 999); 
-
-        const dateFormatter = new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
-        const startStr = dateFormatter.format(startDate);
-        const endStr = dateFormatter.format(endDate);
-
-        return { 
-            startDate: startDate,
-            endDate: endDate,
-            display: `${startStr} حتى ${endStr}`,
-        };
     }
 
-    function calculateWorkingWeeks(startDate, endDate) {
-        const weeks = [];
-        let currentDate = new Date(startDate);
-        currentDate.setHours(0, 0, 0, 0); 
+    form.addEventListener('submit', async function(event) {
+        event.preventDefault();
+        document.getElementById('add-button').textContent = 'جاري الحفظ...';
+        document.getElementById('add-button').disabled = true;
+
+        const date = document.getElementById('activity-date').value;
+        const activitySelect = document.getElementById('activity');
+        const activity = activitySelect.value;
         
-        // **البدء من أقرب يوم سبت قبل تاريخ البدء (لتحديد بداية الأسبوع)**
-        let tempDate = new Date(startDate);
-        let startDayIndex = tempDate.getDay(); 
+        const count = 1; 
+        const beneficiaries = parseInt(document.getElementById('beneficiaries').value) || 0;
         
-        // 6 هو يوم السبت
-        while (startDayIndex !== 6) { 
-            tempDate.setDate(tempDate.getDate() - 1);
-            startDayIndex = tempDate.getDay();
-            // حماية ضد التجاوز
-            if (tempDate.getTime() < startDate.getTime() - (7 * 24 * 60 * 60 * 1000)) break; 
+        if (!activity) {
+            alert("الرجاء اختيار اسم النشاط أولاً.");
+            document.getElementById('add-button').textContent = '✅ تسجيل النشاط';
+            document.getElementById('add-button').disabled = false;
+            return;
         }
-        currentDate = new Date(tempDate); 
-
-        // تصفير الكاش قبل البدء في ملئه
-        cycleDaysCache = {};
-
-        // الحساب حتى نهاية الدورة
-        while (currentDate.getTime() <= endDate.getTime()) { 
-            let currentWeekDays = [];
-            
-            for (let i = 0; i < 7; i++) {
-                const day = new Date(currentDate);
-                const arabicDay = JS_DAY_MAP[day.getDay()];
-
-                // يوم السبت هو بداية الأسبوع، ولكننا نهتم فقط بالأيام التي تقع داخل الدورة
-                if (day.getTime() >= startDate.getTime() && day.getTime() <= endDate.getTime()) {
-                    
-                    const isWorkingDay = WORKING_DAYS.includes(arabicDay);
-                    // 💡 مفتاح التاريخ الثابت (YYYY-MM-DD)
-                    const dateKey = formatDateKey(day); 
-
-                    const dayInfo = {
-                        date: day,
-                        dayName: arabicDay,
-                        dateKey: dateKey, 
-                        isWorkingDay: isWorkingDay
-                    };
-                    
-                    currentWeekDays.push(dayInfo);
-
-                    // نملأ الكاش بجميع أيام الدورة (سواء كانت أيام عمل أم لا)
-                    cycleDaysCache[dayInfo.dateKey] = dayInfo;
-                }
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-            
-            const daysInCycleInWeek = currentWeekDays.filter(d => d.date.getTime() <= endDate.getTime());
-            
-            if (daysInCycleInWeek.length > 0) {
-                // نستخدم أيام العمل فقط لعرض نطاق التاريخ في زر الأسبوع
-                
-                let startDisplay = daysInCycleInWeek[0].date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
-                let endDisplay = daysInCycleInWeek[daysInCycleInWeek.length - 1].date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
-
-                weeks.push({
-                    index: weeks.length + 1,
-                    // أيام الأسبوع هي أيام الدورة التي تقع في هذا الأسبوع (بما فيها الجمعة)
-                    days: daysInCycleInWeek, 
-                    startDisplay: startDisplay,
-                    endDisplay: endDisplay,
-                });
-            }
-        }
-        return weeks;
-    }
-
-    function initializeWeeksButtons() {
-        // (نفس الكود)
-        const cycle = getCurrentAttendanceCycle();
-        cycleWeeks = calculateWorkingWeeks(cycle.startDate, cycle.endDate);
-        const container = document.getElementById('week-buttons-container');
-        container.innerHTML = '';
         
-        document.getElementById('week-title-area').textContent = `🗓️ عرض الحضور حسب الأسبوع (الفترة: ${cycle.display})`;
-
-        if (cycleWeeks.length === 0) {
-            container.innerHTML = '<p class="status-default-muted">لا توجد أسابيع عمل كاملة أو جزئية في هذه الدورة.</p>';
-            document.getElementById('week-details').innerHTML = '<p>لا توجد أسابيع لعرضها.</p>';
+        if (beneficiaries < 0) {
+            alert("الرجاء إدخال عدد مستفيدين صحيح.");
+            document.getElementById('add-button').textContent = '✅ تسجيل النشاط';
+            document.getElementById('add-button').disabled = false;
             return;
         }
 
-        cycleWeeks.forEach(week => {
-            const button = document.createElement('button');
-            button.id = `btn-week-${week.index}`;
-            button.textContent = `أسبوع ${week.index} (${week.startDisplay} - ${week.endDisplay})`;
-            button.onclick = () => viewWeek(week);
-            container.appendChild(button);
-        });
+        const newItem = {
+            date: date,
+            activity: activity,
+            count: count, 
+            beneficiaries: beneficiaries,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
         
-        // عرض الأسبوع الأول افتراضياً بعد الإنشاء
-        viewWeek(cycleWeeks[0]);
-    }
-
-
-    // ----------------------------------------------------------------
-    // 3. وظيفة جلب البيانات وعرض الأسبوع والأيام
-    // ----------------------------------------------------------------
-
-    async function fetchAttendanceData() {
-        const resultArea = document.getElementById('result-area');
-        resultArea.innerHTML = '<p style="color:#007bff;">جاري جلب البيانات من Firebase...</p>';
-
-        allAttendanceData = {}; 
-
         try {
-            const snapshot = await db.collection("user_attendance").get();
-            const rawRecords = [];
-
-            snapshot.forEach(doc => {
-                rawRecords.push({ id: doc.id, ...doc.data() });
-            });
+            await db.collection(ACTIVITIES_COLLECTION).add(newItem);
             
-            // فرز السجلات لضمان أن آخر سجل (أحدث تسجيل/اعتذار) هو الذي يبقى
-            rawRecords.sort((a, b) => {
-                 const timeA = a.timestamp ? a.timestamp.seconds : 0;
-                 const timeB = b.timestamp ? b.timestamp.seconds : 0;
-                 return timeA - timeB; // تصاعدي (الأقدم أولاً)
-            });
+            activitySelect.value = '';
+            document.getElementById('beneficiaries').value = '';
+            alert('تم تسجيل النشاط بنجاح!');
 
-            rawRecords.forEach(data => {
-                const name = data.volunteerName;
-                
-                // 💡 الحصول على كائن التاريخ الصحيح والمفتاح الثابت
-                const recordDate = parseRegistrationDate(data);
-                if(!recordDate) return;
+            document.getElementById('add-button').textContent = '✅ تسجيل النشاط';
+            document.getElementById('add-button').disabled = false;
 
-                const dateKey = formatDateKey(recordDate); // مفتاح YYYY-MM-DD
-                
-                // التأكد أن السجل يقع ضمن الأيام التي تهتم بها الدورة ( cycleDaysCache )
-                if (!cycleDaysCache[dateKey]) return; 
-
-                // هذا المنطق سيضمن أن آخر سجل لنفس المتطوع في نفس اليوم هو الذي يتم الاحتفاظ به
-                if (!allAttendanceData[dateKey]) {
-                    allAttendanceData[dateKey] = {};
-                }
-                
-                allAttendanceData[dateKey][name] = { 
-                    status: data.status, 
-                    reason: data.reason,
-                    time: data.registrationTime.split(' – ')[1] || '-' 
-                };
-            });
-
-            resultArea.innerHTML = `<p class="status-present">✅ **تم تحديث الجدول بنجاح.** (تم جلب ${snapshot.docs.length} سجل)</p>`;
-            
-            // إعادة عرض الأسبوع واليوم النشط بعد التحديث
-            if(cycleWeeks.length > 0) {
-                 const activeWeekButton = document.querySelector('.week-buttons button.active');
-                 let activeWeek = cycleWeeks[0]; 
-                 
-                 if (activeWeekButton) {
-                     const weekIndexMatch = activeWeekButton.textContent.match(/أسبوع (\d+)/);
-                     if (weekIndexMatch) {
-                         const weekIndex = parseInt(weekIndexMatch[1]);
-                         const foundWeek = cycleWeeks.find(w => w.index === weekIndex);
-                         if (foundWeek) activeWeek = foundWeek;
-                     }
-                 }
-                
-                 let activeDateKey = activeWeek.days.find(d => d.isWorkingDay)?.dateKey;
-                 
-                 const activeDayButton = document.querySelector('.day-buttons button.active');
-                 if (activeDayButton) {
-                     activeDateKey = activeDayButton.getAttribute('data-date-key') || activeDateKey;
-                 } 
-                
-                viewWeek(activeWeek); 
-                
-                if (activeDateKey) {
-                    viewDay(activeDateKey);
-                }
-
+            if (reportsSection.style.display !== 'none') {
+                renderTable();
             }
 
         } catch (error) {
-            resultArea.innerHTML = `<p class="status-absent">❌ **خطأ في جلب البيانات:** ${error.message}</p>`;
-            console.error("خطأ في جلب البيانات: ", error);
+            console.error("حدث خطأ أثناء إضافة المستند لـ Firebase: ", error);
+            alert('فشل في عملية تسجيل النشاط. تحقق من إعدادات Firebase.');
+            document.getElementById('add-button').textContent = '✅ تسجيل النشاط';
+            document.getElementById('add-button').disabled = false;
         }
-    }
+    });
     
-    async function initializeWeeksAndFetchData() {
-         initializeWeeksButtons(); 
-         await fetchAttendanceData();
-    }
-    
-    function viewWeek(week) {
-        const weekDetailsDiv = document.getElementById('week-details');
-        
-        document.querySelectorAll('.week-buttons button').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`btn-week-${week.index}`)?.classList.add('active');
-        
-        let weekHeader = `
-            <h3>ملخص الأسبوع ${week.index}: من ${week.startDisplay} إلى ${week.endDisplay}</h3>
-            <div id="day-buttons-container" class="day-buttons" style="margin-bottom: 15px;">
-                <h4>اختر اليوم:</h4>
-        `;
-        
-        // 💡 عرض أيام العمل المجدولة فقط في الأزرار
-        const workingDaysInWeek = week.days.filter(d => d.isWorkingDay);
+    function copySelected() {
+        const checkboxes = document.querySelectorAll('#data-table-body input[type="checkbox"]:checked');
+        if (checkboxes.length === 0) {
+            alert("الرجاء تحديد نشاط واحد على الأقل لنسخه.");
+            return;
+        }
 
-        workingDaysInWeek.forEach(dayInfo => {
-            const displayDate = dayInfo.date.toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
-            // 💡 استخدام dateKey الثابت في زر اليوم
-            weekHeader += `<button class="day-btn" data-date-key="${dayInfo.dateKey}" onclick="viewDay('${dayInfo.dateKey}')">${dayInfo.dayName} (${displayDate})</button>`; 
+        let outputText = "تقرير الأنشطة الوقائية:\n\n";
+        outputText += "التاريخ\tالنشاط\tعدد الأنشطة\tإجمالي المستفيد\n";
+        outputText += "--------------------------------------------------------\n";
+        
+        let totalCount = 0;
+        let totalBeneficiaries = 0;
+
+        checkboxes.forEach(checkbox => {
+            const item = JSON.parse(checkbox.getAttribute('data-activity'));
+            
+            totalCount += item.count; 
+            totalBeneficiaries += item.beneficiaries;
+
+            outputText += `${item.date}\t${item.activity}\t${item.count}\t${item.beneficiaries}\n`;
         });
         
-        weekHeader += `</div><div id="day-attendance-area"></div>`;
-        weekDetailsDiv.innerHTML = weekHeader;
-        
-        // التأكد من استدعاء viewDay لليوم الأول بعد تحديث الأزرار
-        if (workingDaysInWeek.length > 0) {
-            viewDay(workingDaysInWeek[0].dateKey);
-        }
-    }
+        outputText += "--------------------------------------------------------\n";
+        outputText += `الإجمالي\t\t${totalCount}\t${totalBeneficiaries}\n`;
 
-    function viewDay(dateKey) {
-        // 💡 البحث باستخدام المفتاح الثابت YYYY-MM-DD
-        const dayInfo = cycleDaysCache[dateKey]; 
-        if (!dayInfo) return; 
-        
-        const dayAttendanceArea = document.getElementById('day-attendance-area');
-        const arabicDate = dayInfo.date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        
-        document.querySelectorAll('.day-buttons button').forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`button[data-date-key='${dateKey}']`)?.classList.add('active');
 
-        let tableHTML = `
-            <h4> حضور يوم: ${arabicDate} </h4>
-            <div class="action-buttons">
-                <button id="whatsapp-day-button" onclick="sendAttendanceListViaWhatsApp()"> 📲 إرسال قائمة الحضور ليوم ${dayInfo.dayName} عبر واتساب </button>
-            </div>
-            <table class="weekly-table" id="daily-attendance-table">
-                <thead>
-                    <tr>
-                        <th style="text-align:right;">الاسم</th>
-                        <th>الحالة</th>
-                        <th>ملاحظات/وقت التسجيل</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        
-        let finalAttendanceNames = []; 
-        
-        VOLUNTEER_NAMES_ORDERED.forEach(name => {
-            const isFixed = FIXED_VOLUNTEERS[name].includes(dayInfo.dayName);
-            // 💡 البحث في سجلات الحضور باستخدام المفتاح الثابت
-            const recordedStatus = allAttendanceData[dateKey] ? allAttendanceData[dateKey][name] : null;
-
-            let displayStatus;
-            let statusClass = '';
-            let notes = '';
-            
-            // منطق الحضور: مجدول ولم يعتذر، أو سجل حضور صريح
-            const isAttending = (isFixed && (!recordedStatus || recordedStatus.status !== 'اعتذار')) || 
-                                (recordedStatus && recordedStatus.status === 'حضور');
-
-            if (!isFixed && !recordedStatus) {
-                displayStatus = 'غير مجدول';
-                statusClass = 'status-not-scheduled';
-                notes = '-';
-            } else if (recordedStatus) {
-                notes = recordedStatus.time || recordedStatus.reason || '-';
-                if (recordedStatus.status === 'اعتذار') {
-                    displayStatus = 'اعتذار ❌';
-                    statusClass = 'status-absent';
-                } else { 
-                    displayStatus = 'حضور ✅';
-                    statusClass = 'status-present';
-                }
-            } else {
-                displayStatus = 'حضور (افتراضي) ✅';
-                statusClass = 'status-present';
-                notes = 'مجدول (لم يسجل حالة)';
-            }
-            
-            if (isAttending) {
-                finalAttendanceNames.push(name);
-            }
-
-            tableHTML += `
-                <tr>
-                    <td style="text-align:right;">${name}</td>
-                    <td class="${statusClass}">${displayStatus}</td>
-                    <td>${notes}</td>
-                </tr>
-            `;
-        });
-
-        tableHTML += `</tbody></table>`;
-        dayAttendanceArea.innerHTML = tableHTML;
-        
-        currentDayWhatsAppList.names = finalAttendanceNames;
-        currentDayWhatsAppList.dayName = dayInfo.dayName;
-        currentDayWhatsAppList.dateKey = dateKey;
-        currentDayWhatsAppList.arabicDate = arabicDate; 
-        
-        document.getElementById('whatsapp-day-button').textContent = `📲 إرسال قائمة الحضور ليوم ${dayInfo.dayName} عبر واتساب (${finalAttendanceNames.length} متطوع)`;
-    }
-
-    // ----------------------------------------------------------------
-    // 4. وظائف الواتساب (لم تتغير)
-    // ----------------------------------------------------------------
-
-    function sendAttendanceListViaWhatsApp() {
-        if (!currentDayWhatsAppList.dayName) return;
-
-        const day = currentDayWhatsAppList.dayName;
-        const attendanceList = currentDayWhatsAppList.names;
-        const arabicDate = currentDayWhatsAppList.arabicDate; 
-
-        let listText = attendanceList.map((name, index) => `${index + 1}. ${name}`).join('\n');
-        
-        if (attendanceList.length === 0) {
-            listText = "لا يوجد حضور مؤكد لهذا اليوم.";
-        }
-        
-        const message = `
-📌 قائمة الحضور اليومية
-🗓️ اليوم : ${day} - ${arabicDate} 
-🕒 معاد الشغل: ٣ العصر
-👥 إجمالي المتطوعين : ${attendanceList.length}
-
----
-قائمة المتطوعين الحاضرين اليوم:
-${listText}
-`;
-        
-        const encodedMessage = encodeURIComponent(message.trim());
-        const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-        const sendButton = document.getElementById('whatsapp-day-button');
-        sendButton.textContent = '✅ جاري فتح الواتساب...';
-        
-        window.open(whatsappUrl, '_blank');
-        
-        setTimeout(() => {
-             sendButton.textContent = `📲 إرسال قائمة الحضور ليوم ${day} عبر واتساب (${attendanceList.length} متطوع)`;
-        }, 5000);
-    }
-    
-    // ----------------------------------------------------------------
-    // 5. وظائف التقرير الشهري (تم تعديلها للاعتماد على المفتاح الثابت)
-    // ----------------------------------------------------------------
-
-    function getDaysInCycle(start, end) {
-        const cycleDays = [];
-        let currentDate = new Date(start);
-        currentDate.setHours(0, 0, 0, 0); 
-        
-        while (currentDate.getTime() <= end.getTime()) { 
-            const jsDayIndex = currentDate.getDay();
-            const arabicDay = JS_DAY_MAP[jsDayIndex];
-
-            // نحسب أيام العمل المجدولة فقط
-            if (WORKING_DAYS.includes(arabicDay)) {
-                cycleDays.push({
-                    date: new Date(currentDate), 
-                    day: arabicDay,
-                    // 💡 استخدام المفتاح الثابت
-                    dateKey: formatDateKey(currentDate) 
-                });
-            }
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-        return cycleDays;
-    }
-    
-    async function calculateMonthlyAttendance() {
-        const monthlyReportArea = document.getElementById('monthly-report-area');
-        monthlyReportArea.innerHTML = '<p style="color:#007bff;">جاري جلب وفلترة السجلات التاريخية لحساب التقرير...</p>';
-
-        try {
-            if (Object.keys(allAttendanceData).length === 0) {
-                 // التأكد من جلب البيانات أولاً
-                 await fetchAttendanceData(); 
-                 if (Object.keys(allAttendanceData).length === 0) {
-                     monthlyReportArea.innerHTML = `<p class="status-absent">❌ **لا توجد بيانات حضور لجلبها.**</p>`;
-                     return;
-                 }
-            }
-
-            const cycle = getCurrentAttendanceCycle();
-            // الحصول على أيام العمل الفعلية داخل الدورة (هذه هي الأيام التي يتم توقع الحضور فيها)
-            const cycleDays = getDaysInCycle(cycle.startDate, cycle.endDate); 
-            
-            const CLEAN_REPORT = {};
-            VOLUNTEER_NAMES_ORDERED.forEach(name => {
-                CLEAN_REPORT[name] = { expected: 0, attended: 0, apologies: 0, not_registered: 0 }; 
-            });
-
-            // تجميع الحالة النهائية لكل متطوع في كل يوم بناءً على آخر تسجيل
-            const dailyStatusMap = new Map(); 
-            
-            for (const dateKey in allAttendanceData) { // dateKey هو المفتاح الثابت YYYY-MM-DD
-                // التأكد من أن المفتاح يقع داخل الدورة (باستخدام الكاش للتأكد من أنه يوم عمل مجدول)
-                if (cycleDaysCache[dateKey]) {
-                     for (const name in allAttendanceData[dateKey]) {
-                        if (!dailyStatusMap.has(name)) {
-                            dailyStatusMap.set(name, new Map());
-                        }
-                        
-                        const currentStatus = allAttendanceData[dateKey][name].status;
-                        
-                        // يتم تحديث الحالة، الاعتذار يلغي أي حضور قبله أو بعده في نفس اليوم
-                        if (currentStatus === 'اعتذار') {
-                            dailyStatusMap.get(name).set(dateKey, 'اعتذار');
-                        } else if (currentStatus === 'حضور') {
-                            dailyStatusMap.get(name).set(dateKey, 'حضور');
-                        }
-                    }
-                }
-            }
-            
-            // حساب التقرير بناءً على الأيام المجدولة
-            VOLUNTEER_NAMES_ORDERED.forEach(name => {
-                const report = CLEAN_REPORT[name];
-                
-                let actualAttendance = 0;
-                let actualApologies = 0;
-                let explicitAttendanceOutOfSchedule = 0;
-                let unregisteredScheduledAttendance = 0;
-                
-                cycleDays.forEach(dayInfo => {
-                    const dateKey = dayInfo.dateKey;
-                    const dayArabic = dayInfo.day;
-                    const status = dailyStatusMap.get(name)?.get(dateKey);
-                    
-                    const isScheduled = FIXED_VOLUNTEERS[name].includes(dayArabic);
-
-                    if (isScheduled) { 
-                        report.expected++;
-                        
-                        if (status === 'حضور') {
-                            actualAttendance++; 
-                        } else if (status === 'اعتذار') {
-                            actualApologies++; 
-                        } else {
-                            // مجدول ولم يسجل حالة = حضور افتراضي
-                            unregisteredScheduledAttendance++; 
-                        }
-                    } else { 
-                        // غير مجدول: يحسب الحضور الصريح فقط (هذا يضاف إلى Attended)
-                        if (status === 'حضور') {
-                            explicitAttendanceOutOfSchedule++; 
-                        }
-                    }
-                });
-                
-                // الحضور المحتسب = (الحضور الفعلي المسجل في أيام الجدولة + الحضور الافتراضي) + الحضور الصريح في غير أيام الجدولة
-                report.attended = actualAttendance + unregisteredScheduledAttendance + explicitAttendanceOutOfSchedule; 
-                report.apologies = actualApologies; 
-                
-                // عدم تسجيل الحالة = الأيام المتوقعة (المجدولة) - الحضور الفعلي في هذه الأيام - الاعتذار المسجل في هذه الأيام
-                report.not_registered = report.expected - actualAttendance - actualApologies;
-                
-                if (report.expected === 0) {
-                     report.not_registered = 0;
-                } else if (report.not_registered < 0) {
-                     report.not_registered = 0;
-                }
-            });
-
-            finalMonthlyReportData.cycleDisplay = cycle.display;
-            finalMonthlyReportData.data = CLEAN_REPORT;
-
-            let tableHTML = `
-                <h3>تقرير الحضور (الحساب وفقاً لقواعد العمل)</h3>
-                <div class="monthly-summary">
-                    <p>تم الحساب بناءً على قاعدة **"المجدول حاضر ما لم يعتذر، والحضور الصريح يحسب دائماً"** للفترة:</p>
-                    <p>📅 **${cycle.display}**</p>
-                    <div class="action-buttons" style="margin-bottom: 0;">
-                        <button id="copy-monthly-button" onclick="copyMonthlyTableContent()"> نسخ التقرير (الحضور المحتسب فقط) </button>
-                    </div>
-                </div>
-                
-                <table class="monthly-table">
-                    <thead>
-                        <tr>
-                            <th>الاسم</th>
-                            <th>الأيام المتوقعة (مجدول)</th>
-                            <th>الحضور المحتسب (الفعلي + الافتراضي)</th>
-                            <th>الاعتذار المسجل (الفعلي)</th>
-                            <th>عدم تسجيل الحالة (غ/ا)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            VOLUNTEER_NAMES_ORDERED.forEach(name => {
-                const report = CLEAN_REPORT[name];
-                
-                tableHTML += `
-                    <tr>
-                        <td>${name}</td>
-                        <td>${report.expected} أيام</td>
-                        <td class="status-present">${report.attended} أيام</td>
-                        <td class="status-absent">${report.apologies} أيام</td>
-                        <td>${report.not_registered} أيام</td>
-                    </tr>
-                `;
-            });
-
-            tableHTML += `</tbody></table>`;
-            
-            monthlyReportArea.innerHTML = tableHTML;
-            
-        } catch(error) {
-             monthlyReportArea.innerHTML = `<p class="status-absent">❌ **خطأ فادح في معالجة البيانات:** ${error.message}. يرجى مراجعة Console لمزيد من التفاصيل.</p>`;
-             console.error("Critical Error in Monthly Calculation:", error);
-        }
-    }
-
-    function copyMonthlyTableContent() {
-        if (!finalMonthlyReportData.data || Object.keys(finalMonthlyReportData.data).length === 0) {
-             alert('❌ الرجاء الضغط على "التقرير الشهري الدقيق" أولاً لحساب البيانات.');
-             return;
-        }
-
-        const cycleDisplay = finalMonthlyReportData.cycleDisplay;
-        const reportData = finalMonthlyReportData.data;
-        
-        let textToCopy = `تقرير الحضور الشهري للفترة ${cycleDisplay}\n\n`;
-        textToCopy += '------------------------------------------\n';
-        
-        VOLUNTEER_NAMES_ORDERED.forEach(name => {
-            const report = reportData[name];
-            if (report) {
-                textToCopy += `${name}\t: ${report.attended} أيام حضور\n`;
-            }
-        });
-
-        navigator.clipboard.writeText(textToCopy.trim())
+        navigator.clipboard.writeText(outputText)
             .then(() => {
-                alert(`✅ تم نسخ التقرير الشهري بنجاح!`);
+                alert(`تم نسخ تقرير مفصل لـ ${checkboxes.length} نشاطاً إلى الحافظة بنجاح.`);
             })
             .catch(err => {
-                console.error('فشل في النسخ:', err);
-                alert('❌ فشل في نسخ التقرير. قد لا يدعم المتصفح هذه الميزة.');
+                console.error('فشل النسخ:', err);
+                alert('فشل في عملية النسخ إلى الحافظة.');
             });
     }
 
-    window.onload = initializeWeeksAndFetchData;
 </script>
 
 </body>
