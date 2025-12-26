@@ -3,41 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <title>إرسال حضور بُكرة تلقائي</title>
+<style>
+body {font-family: Arial; display:flex; justify-content:center; align-items:center; height:100vh; margin:0; background:#f4f4f9;}
+.box {background:#fff; padding:30px; border-radius:10px; text-align:center; box-shadow:0 4px 10px rgba(0,0,0,.1);}
+</style>
+
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-<style>
-body {
-    font-family: Arial, sans-serif;
-    background:#f4f4f9;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    height:100vh;
-    margin:0;
-}
-.box {
-    background:#fff;
-    padding:30px;
-    border-radius:10px;
-    text-align:center;
-    box-shadow:0 4px 10px rgba(0,0,0,.1);
-    font-size:16px;
-}
-</style>
 </head>
 <body>
 
 <div class="box">
-⏳ جاري تجهيز رسالة حضور بُكرة تلقائيًا...
+⏳ جاري تجهيز رسالة حضور بُكرة...
 </div>
 
 <script>
-// ----- Firebase Config -----
-firebase.initializeApp({
-    apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
-    authDomain: "rdtt-15cbe.firebaseapp.com",
-    projectId: "rdtt-15cbe"
-});
+// ----- إعداد Firebase -----
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH_DOMAIN",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_STORAGE_BUCKET",
+  messagingSenderId: "YOUR_MSG_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ----- بيانات المتطوعين -----
@@ -58,72 +49,53 @@ const FIXED_VOLUNTEERS = {
 };
 const JS_DAY_MAP = {0:"الأحد",1:"الإثنين",2:"الثلاثاء",3:"الأربعاء",4:"الخميس",5:"الجمعة",6:"السبت"};
 
-// ----- دوال مساعدة -----
-function formatKey(d){ return d.toISOString().split('T')[0]; }
+// ----- Unicode للإيموجي -----
+const EMOJI = { pin:'\uD83D\uDCCC', calendar:'\uD83D\uDCC5', clock:'\uD83D\uDD52', people:'\uD83D\uDC65' };
 
-// ----- التنفيذ الرئيسي -----
-async function run(){
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate()+1);
-    tomorrow.setHours(0,0,0,0);
+// ----- تحديد بُكرة -----
+const tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate()+1);
+const dayName = JS_DAY_MAP[tomorrow.getDay()];
+const dateKey = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth()+1).padStart(2,'0')}-${String(tomorrow.getDate()).padStart(2,'0')}`;
+const arabicDate = tomorrow.toLocaleDateString('ar-EG',{year:'numeric',month:'long',day:'numeric'});
 
-    const dayName = JS_DAY_MAP[tomorrow.getDay()];
-    if(!WORKING_DAYS.includes(dayName)){
-        document.querySelector(".box").innerText = "❌ بُكرة مش يوم عمل";
-        return;
-    }
+// ----- جلب الحضور من Firebase -----
+async function fetchAttendance() {
+    try {
+        const snapshot = await db.collection("user_attendance").doc(dateKey).get();
+        const data = snapshot.exists ? snapshot.data() : {};
+        const finalList = Object.keys(FIXED_VOLUNTEERS).filter(name=>{
+            // مجدول اليوم أو حضر صريح
+            const isScheduled = FIXED_VOLUNTEERS[name].includes(dayName);
+            const status = data[name]?.status; // "حضور" أو "اعتذار"
+            return (isScheduled && status !== "اعتذار") || status === "حضور";
+        });
 
-    const dateKey = formatKey(tomorrow);
+        const listText = finalList.length
+            ? finalList.map((name,i)=>`${i+1}. ${name}`).join('\n')
+            : "لا يوجد حضور مؤكد لهذا اليوم.";
 
-    // جلب جميع سجلات الحضور
-    const snapshot = await db.collection("user_attendance").get();
-    const lastStatus = {};
-
-    snapshot.forEach(doc=>{
-        const d = doc.data();
-        if(d.dateKey === dateKey){
-            lastStatus[d.volunteerName] = d.status;
-        }
-    });
-
-    // تحديد الحاضرين
-    const finalList = [];
-    Object.keys(FIXED_VOLUNTEERS).forEach(name=>{
-        const scheduled = FIXED_VOLUNTEERS[name].includes(dayName);
-        const status = lastStatus[name];
-        if((scheduled && status!=="اعتذار") || status==="حضور"){
-            finalList.push(name);
-        }
-    });
-
-    // التاريخ بدون اسم اليوم لتجنب التكرار
-    const arabicDate = tomorrow.toLocaleDateString(
-        'ar-EG',
-        { year:'numeric', month:'long', day:'numeric' }
-    );
-
-    const listText = finalList.length
-        ? finalList.map((name,i)=>`${i+1}. ${name}`).join('\n')
-        : "لا يوجد حضور مؤكد لهذا اليوم.";
-
-    // تكوين الرسالة الأصلية تمامًا
-    const message = `
-📌 قائمة الحضور اليومية
-🗓️ اليوم : ${dayName} - ${arabicDate} 
-🕒 معاد الشغل: ٣ العصر
-👥 إجمالي المتطوعين : ${finalList.length}
+        const message = `
+${EMOJI.pin} قائمة الحضور اليومية
+${EMOJI.calendar} اليوم : ${dayName} - ${arabicDate} 
+${EMOJI.clock} معاد الشغل: ٣ العصر
+${EMOJI.people} إجمالي المتطوعين : ${finalList.length}
 
 ---
 قائمة المتطوعين الحاضرين اليوم:
 ${listText}
 `;
 
-    document.querySelector(".box").innerText = "✅ جاري فتح واتساب...";
-    // فتح واتساب بالرسالة الجاهزة
-    window.location.href = "https://wa.me/?text=" + encodeURIComponent(message.trim());
+        document.querySelector(".box").innerText = "✅ جاري فتح واتساب...";
+        window.location.href = "https://wa.me/?text=" + encodeURIComponent(message.trim());
+    } catch(e){
+        console.error(e);
+        document.querySelector(".box").innerText = "❌ حدث خطأ أثناء جلب البيانات!";
+    }
 }
 
-run();
+// ----- تنفيذ -----
+fetchAttendance();
 </script>
 
 </body>
