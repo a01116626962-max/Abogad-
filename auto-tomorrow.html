@@ -3,10 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>إرسال حضور بُكرة تلقائي</title>
-
 <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -27,11 +25,10 @@ body {
 }
 </style>
 </head>
-
 <body>
 
 <div class="box">
-    ⏳ جاري تجهيز رسالة حضور بُكرة تلقائيًا...
+⏳ جاري تجهيز رسالة حضور بُكرة تلقائيًا...
 </div>
 
 <script>
@@ -59,10 +56,7 @@ const FIXED_VOLUNTEERS = {
     "إبراهيم": WORKING_DAYS,
     "معتز": WORKING_DAYS
 };
-const JS_DAY_MAP = {
-    0:"الأحد",1:"الإثنين",2:"الثلاثاء",
-    3:"الأربعاء",4:"الخميس",5:"الجمعة",6:"السبت"
-};
+const JS_DAY_MAP = {0:"الأحد",1:"الإثنين",2:"الثلاثاء",3:"الأربعاء",4:"الخميس",5:"الجمعة",6:"السبت"};
 
 // ----- دوال مساعدة -----
 function formatKey(d){ return d.toISOString().split('T')[0]; }
@@ -81,6 +75,7 @@ async function run(){
 
     const dateKey = formatKey(tomorrow);
 
+    // جلب جميع سجلات الحضور
     const snapshot = await db.collection("user_attendance").get();
     const lastStatus = {};
 
@@ -91,6 +86,7 @@ async function run(){
         }
     });
 
+    // تحديد الحاضرين
     const finalList = [];
     Object.keys(FIXED_VOLUNTEERS).forEach(name=>{
         const scheduled = FIXED_VOLUNTEERS[name].includes(dayName);
@@ -100,15 +96,17 @@ async function run(){
         }
     });
 
+    // التاريخ بدون اسم اليوم لتجنب التكرار
     const arabicDate = tomorrow.toLocaleDateString(
         'ar-EG',
-        { weekday:'long', year:'numeric', month:'long', day:'numeric' }
+        { year:'numeric', month:'long', day:'numeric' }
     );
 
     const listText = finalList.length
         ? finalList.map((name,i)=>`${i+1}. ${name}`).join('\n')
         : "لا يوجد حضور مؤكد لهذا اليوم.";
 
+    // تكوين الرسالة الأصلية تمامًا
     const message = `
 📌 قائمة الحضور اليومية
 🗓️ اليوم : ${dayName} - ${arabicDate} 
@@ -121,6 +119,7 @@ ${listText}
 `;
 
     document.querySelector(".box").innerText = "✅ جاري فتح واتساب...";
+    // فتح واتساب بالرسالة الجاهزة
     window.location.href = "https://wa.me/?text=" + encodeURIComponent(message.trim());
 }
 
