@@ -7,6 +7,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
     <style>
         :root {
             --primary: #2563eb;       /* أزرق ملكي */
@@ -177,6 +180,10 @@
         .btn-danger { background: var(--danger); color: white; padding: 6px 12px; font-size: 0.85rem;}
         .btn-edit { background: var(--warning); color: white; padding: 6px 12px; font-size: 0.85rem;}
         .btn-secondary { background: var(--secondary); color: white; }
+        
+        /* زر الـ PDF الجديد */
+        .btn-pdf { background: #dc2626; color: white; }
+        .btn-pdf:hover { background: #b91c1c; }
 
         /* --- الجداول Tables --- */
         .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; }
@@ -296,7 +303,8 @@
             </div>
             
             <form id="data-form">
-                <input type="hidden" id="edit-doc-id"> <div class="form-grid">
+                <input type="hidden" id="edit-doc-id"> 
+                <div class="form-grid">
                     <div class="form-group">
                         <label>تاريخ النشاط</label>
                         <input type="date" id="activity-date" required>
@@ -347,8 +355,8 @@
                 <button onclick="renderTable()" class="btn btn-primary" style="width: auto;">
                     <i class="fa-solid fa-filter"></i> عرض
                 </button>
-                <button onclick="exportToExcel()" class="btn btn-success" style="width: auto;">
-                    <i class="fa-solid fa-file-excel"></i> تصدير Excel
+                <button onclick="exportToPDF()" class="btn btn-pdf" style="width: auto;">
+                    <i class="fa-solid fa-file-pdf"></i> طباعة التقرير (PDF)
                 </button>
             </div>
 
@@ -378,7 +386,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <script>
     // ====================================================
@@ -398,7 +405,7 @@
     const ACTIVITIES_COLLECTION = 'dashboard_preventive_logs';
 
     // المتغيرات العامة
-    let allDataCache = []; // لتخزين البيانات محلياً للرسوم البيانية
+    let allDataCache = [];
     let chartInstance1 = null;
     let chartInstance2 = null;
 
@@ -406,12 +413,9 @@
     // 🚀 عند تحميل الصفحة
     // ====================================================
     window.onload = function() {
-        // تعيين التاريخ الحالي
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('activity-date').value = today;
         document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        
-        // تحميل البيانات الأولية للوحة القيادة
         loadDashboardData();
     };
 
@@ -423,16 +427,11 @@
     }
 
     function showSection(sectionId, linkElement) {
-        // إخفاء كل الأقسام
         document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-        // إظهار القسم المطلوب
         document.getElementById(sectionId).classList.add('active');
-        
-        // تحديث القائمة الجانبية
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         linkElement.classList.add('active');
 
-        // تحديث عنوان الصفحة
         const titles = {
             'dashboard': 'لوحة القيادة',
             'entry': 'تسجيل نشاط جديد',
@@ -440,11 +439,9 @@
         };
         document.getElementById('page-header-title').textContent = titles[sectionId];
 
-        // تحديث البيانات حسب القسم
         if(sectionId === 'dashboard') loadDashboardData();
         if(sectionId === 'reports') renderTable();
         
-        // إغلاق القائمة في الموبايل
         if(window.innerWidth <= 768) {
             document.getElementById('sidebar').classList.remove('open');
         }
@@ -453,8 +450,6 @@
     // ====================================================
     // 💾 إدارة البيانات (CRUD)
     // ====================================================
-
-    // 1. إضافة أو تعديل (Submit)
     document.getElementById('data-form').addEventListener('submit', async function(event) {
         event.preventDefault();
         
@@ -468,22 +463,18 @@
             date: document.getElementById('activity-date').value,
             activity: document.getElementById('activity').value,
             beneficiaries: parseInt(document.getElementById('beneficiaries').value) || 0,
-            count: 1, // ثابت للحفاظ على بنية البيانات القديمة
+            count: 1,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
 
         try {
             if (docId) {
-                // وضع التعديل Update
                 await db.collection(ACTIVITIES_COLLECTION).doc(docId).update(data);
                 Swal.fire({ icon: 'success', title: 'تم التعديل!', text: 'تم تحديث بيانات النشاط بنجاح.', timer: 2000, showConfirmButton: false });
                 resetForm();
             } else {
-                // وضع الإضافة الجديدة Add
                 await db.collection(ACTIVITIES_COLLECTION).add(data);
                 Swal.fire({ icon: 'success', title: 'تم الحفظ!', text: 'تم تسجيل النشاط بنجاح.', timer: 2000, showConfirmButton: false });
-                
-                // تنظيف الحقول ما عدا التاريخ
                 document.getElementById('activity').value = '';
                 document.getElementById('beneficiaries').value = '';
             }
@@ -496,7 +487,6 @@
         }
     });
 
-    // 2. تحميل البيانات (Load)
     async function loadDataFromFireStore(fromDate = null, toDate = null) {
         let q = db.collection(ACTIVITIES_COLLECTION).orderBy('date', 'desc');
         
@@ -508,7 +498,6 @@
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
 
-    // 3. حذف (Delete)
     async function deleteItem(id) {
         const result = await Swal.fire({
             title: 'هل أنت متأكد؟',
@@ -525,31 +514,25 @@
             try {
                 await db.collection(ACTIVITIES_COLLECTION).doc(id).delete();
                 Swal.fire('تم الحذف!', 'تم حذف السجل بنجاح.', 'success');
-                renderTable(); // تحديث الجدول
-                loadDashboardData(); // تحديث الإحصائيات في الخلفية
+                renderTable(); 
+                loadDashboardData(); 
             } catch (error) {
                 Swal.fire('خطأ!', 'فشل الحذف.', 'error');
             }
         }
     }
 
-    // 4. تحضير التعديل (Edit Setup)
     function editItem(id, date, activity, beneficiaries) {
-        // الانتقال لصفحة الإدخال
         document.querySelectorAll('.nav-link')[1].click(); 
-        
-        // تعبئة النموذج
         document.getElementById('edit-doc-id').value = id;
         document.getElementById('activity-date').value = date;
         document.getElementById('activity').value = activity;
         document.getElementById('beneficiaries').value = beneficiaries;
 
-        // تغيير حالة الزر
         document.getElementById('submit-btn').innerHTML = '<i class="fa-solid fa-pen"></i> تحديث البيانات';
         document.getElementById('submit-btn').classList.remove('btn-primary');
         document.getElementById('submit-btn').classList.add('btn-warning');
         document.getElementById('cancel-edit-btn').style.display = 'block';
-        
         window.scrollTo(0,0);
     }
 
@@ -557,7 +540,6 @@
         document.getElementById('data-form').reset();
         document.getElementById('edit-doc-id').value = '';
         document.getElementById('activity-date').value = new Date().toISOString().split('T')[0];
-        
         const btn = document.getElementById('submit-btn');
         btn.innerHTML = '<i class="fa-solid fa-save"></i> حفظ البيانات';
         btn.classList.add('btn-primary');
@@ -569,15 +551,11 @@
     // 📊 لوحة القيادة والرسوم البيانية
     // ====================================================
     async function loadDashboardData() {
-        // تحميل كل البيانات للإحصائيات (يمكن تحسينه في المستقبل لطلب ملخص فقط)
         const data = await loadDataFromFireStore();
         allDataCache = data;
-
-        // 1. حساب KPI
         const totalActivities = data.length;
         const totalBeneficiaries = data.reduce((sum, item) => sum + (parseInt(item.beneficiaries) || 0), 0);
         
-        // حساب النشاط الأكثر تكراراً
         const activityCounts = {};
         data.forEach(item => { activityCounts[item.activity] = (activityCounts[item.activity] || 0) + 1; });
         let topActivity = "-";
@@ -586,36 +564,29 @@
             if (value > maxCount) { maxCount = value; topActivity = key; }
         }
 
-        // تحديث DOM
         animateValue("kpi-activities", 0, totalActivities, 1000);
         animateValue("kpi-beneficiaries", 0, totalBeneficiaries, 1000);
-        document.getElementById('kpi-top-activity').textContent = topActivity.split(' ')[0] + '...'; // تقصير الاسم قليلاً
+        document.getElementById('kpi-top-activity').textContent = topActivity.split(' ')[0] + '...'; 
 
-        // 2. تحديث الرسوم البيانية
         updateCharts(data);
     }
 
     function updateCharts(data) {
-        // تجهيز بيانات المخطط الدائري (المستفيدين حسب النشاط)
         const beneficiariesByActivity = {};
         data.forEach(item => {
-            const act = item.activity.substring(0, 15) + (item.activity.length>15 ? '..' : ''); // اسم مختصر
+            const act = item.activity.substring(0, 15) + (item.activity.length>15 ? '..' : ''); 
             beneficiariesByActivity[act] = (beneficiariesByActivity[act] || 0) + item.beneficiaries;
         });
 
-        // تجهيز بيانات المخطط الخطي (المستفيدين عبر الزمن - آخر 7 أيام فيها نشاط)
         const timelineData = {};
-        // ترتيب التواريخ
         const sortedDates = data.sort((a,b) => new Date(a.date) - new Date(b.date));
         sortedDates.forEach(item => {
             timelineData[item.date] = (timelineData[item.date] || 0) + item.beneficiaries;
         });
 
-        // تدمير المخططات القديمة إذا وجدت
         if(chartInstance1) chartInstance1.destroy();
         if(chartInstance2) chartInstance2.destroy();
 
-        // رسم المخطط الدائري
         const ctx1 = document.getElementById('chartActivities').getContext('2d');
         chartInstance1 = new Chart(ctx1, {
             type: 'doughnut',
@@ -630,9 +601,8 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: {font:{family:'Tajawal'}} } } }
         });
 
-        // رسم المخطط الخطي
         const ctx2 = document.getElementById('chartTrend').getContext('2d');
-        const dates = Object.keys(timelineData).slice(-10); // آخر 10 أيام
+        const dates = Object.keys(timelineData).slice(-10); 
         const values = Object.values(timelineData).slice(-10);
 
         chartInstance2 = new Chart(ctx2, {
@@ -669,7 +639,7 @@
     }
 
     // ====================================================
-    // 📋 الجدول والتقارير
+    // 📋 الجدول
     // ====================================================
     async function renderTable() {
         const loading = document.getElementById('table-loading');
@@ -706,7 +676,6 @@
             tbody.insertAdjacentHTML('beforeend', row);
         });
 
-        // صف الإجمالي
         const totalRow = `
             <tr style="background-color: #eff6ff; font-weight: bold;">
                 <td colspan="2" style="text-align:left; padding-left:20px;">الإجمالي الكلي:</td>
@@ -716,13 +685,118 @@
         tbody.insertAdjacentHTML('beforeend', totalRow);
     }
 
-    // تصدير Excel
-    function exportToExcel() {
-        const table = document.getElementById("reports-table");
-        const wb = XLSX.utils.table_to_book(table, {sheet: "Sheet1"});
-        XLSX.writeFile(wb, `Preventive_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
+    // ====================================================
+    // 📄 تصدير PDF مع التجميع (الكود الجديد المطلوب)
+    // ====================================================
+    async function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // 🔴 هام جداً: ضعي كود الـ Base64 الطويل جداً هنا بين علامتي التنصيص
+        const myArabicFont = ""; // <----- ضعي الكود هنا
+
+        // فحص إذا كان المستخدم وضع الكود أم لا
+        if (myArabicFont.length > 50) {
+            doc.addFileToVFS("MyArabicFont.ttf", myArabicFont);
+            doc.addFont("MyArabicFont.ttf", "MyArabicFont", "normal");
+            doc.setFont("MyArabicFont");
+        } else {
+            alert("تنبيه: لم يتم إضافة كود الخط العربي (Base64) في الكود، ستظهر الحروف العربية بشكل خاطئ.");
+        }
+
+        // 1. جلب البيانات بناءً على التاريخ المحدد
+        const fromDate = document.getElementById('filter-from-date').value;
+        const toDate = document.getElementById('filter-to-date').value;
+        
+        // استخدام SweetAlert للتحميل
+        Swal.fire({title: 'جاري تحضير الملف...', didOpen: () => { Swal.showLoading() }});
+
+        const rawData = await loadDataFromFireStore(fromDate, toDate);
+
+        if (rawData.length === 0) {
+            Swal.close();
+            Swal.fire('تنبيه', 'لا توجد بيانات لتصديرها في هذه الفترة', 'info');
+            return;
+        }
+
+        // 2. تجميع البيانات (Aggregation)
+        const summary = {};
+        rawData.forEach(item => {
+            const name = item.activity;
+            if (!summary[name]) {
+                summary[name] = { count: 0, beneficiaries: 0 };
+            }
+            summary[name].count += 1;
+            summary[name].beneficiaries += parseInt(item.beneficiaries || 0);
+        });
+
+        // تحويل الكائن لمصفوفة للجدول
+        // الترتيب: [المستفيدين, العدد, النشاط]
+        const tableRows = Object.keys(summary).map(key => {
+            return [
+                summary[key].beneficiaries.toLocaleString('ar-EG'),
+                summary[key].count.toLocaleString('ar-EG'),
+                key 
+            ];
+        });
+
+        // حساب الإجمالي
+        let totalActs = 0;
+        let totalBen = 0;
+        Object.values(summary).forEach(v => {
+            totalActs += v.count;
+            totalBen += v.beneficiaries;
+        });
+
+        // 3. رسم PDF
+        doc.setFontSize(16);
+        doc.text("تقرير الأنشطة المجمع - صندوق مكافحة وعلاج الإدمان", 105, 20, { align: "center" });
+        
+        doc.setFontSize(11);
+        if(fromDate && toDate) {
+            doc.text(`الفترة من: ${fromDate} إلى: ${toDate}`, 105, 30, { align: "center" });
+        } else {
+            doc.text(`تاريخ التقرير: ${new Date().toLocaleDateString('ar-EG')}`, 105, 30, { align: "center" });
+        }
+
+        doc.autoTable({
+            startY: 40,
+            head: [['إجمالي المستفيدين', 'عدد الأنشطة', 'الأنشطة الوقائية المنفذة']],
+            body: tableRows,
+            foot: [[
+                totalBen.toLocaleString('ar-EG'), 
+                totalActs.toLocaleString('ar-EG'), 
+                'الإجمالي العام'
+            ]],
+            theme: 'grid',
+            styles: {
+                font: (myArabicFont.length > 50) ? 'MyArabicFont' : 'helvetica', 
+                halign: 'center',
+                fontSize: 12,
+                cellPadding: 4
+            },
+            headStyles: {
+                fillColor: [37, 99, 235], // نفس لون الـ Primary
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            footStyles: {
+                fillColor: [241, 245, 249],
+                textColor: 0,
+                fontStyle: 'bold'
+            },
+            columnStyles: {
+                0: { cellWidth: 40 },
+                1: { cellWidth: 30 },
+                2: { halign: 'right' } // اسم النشاط يمين
+            }
+        });
+
+        // إغلاق التنبيه وحفظ الملف
+        Swal.close();
+        doc.save(`Preventive_Report_Summary.pdf`);
     }
 
 </script>
 </body>
-</html>
+                </html>
