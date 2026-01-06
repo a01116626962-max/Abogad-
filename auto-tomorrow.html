@@ -4,12 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نظام إدارة الأنشطة الوقائية</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-    <style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script> <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> <style>
         :root {
             --primary: #2563eb;       
             --primary-dark: #1e40af;
@@ -79,8 +78,6 @@
             color: var(--primary);
         }
 
-        .nav-link i { width: 20px; text-align: center; }
-
         /* --- المحتوى الرئيسي --- */
         .main-content {
             flex: 1;
@@ -99,10 +96,7 @@
             gap: 15px;
         }
 
-        .page-title h2 { margin: 0; font-size: 1.8rem; }
-        .page-title p { margin: 5px 0 0; color: var(--text-light); }
-
-        /* --- البطاقات --- */
+        /* --- البطاقات والإحصائيات --- */
         .card {
             background: var(--bg-card);
             border-radius: 16px;
@@ -112,7 +106,6 @@
             border: 1px solid #e2e8f0;
         }
 
-        /* --- الإحصائيات --- */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -130,66 +123,11 @@
             align-items: center;
             justify-content: space-between;
         }
+
         .stat-info h3 { margin: 0; font-size: 2rem; color: var(--text-main); }
-        .stat-info p { margin: 0; color: var(--text-light); font-size: 0.9rem; }
-        .stat-icon {
-            font-size: 2.5rem;
-            opacity: 0.15;
-            color: var(--primary);
-        }
+        .stat-icon { font-size: 2.5rem; opacity: 0.15; color: var(--primary); }
 
-        /* --- النماذج --- */
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-        }
-
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-main); }
-        
-        input, select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            font-family: 'Tajawal';
-            font-size: 1rem;
-            transition: border-color 0.3s;
-        }
-        input:focus, select:focus { border-color: var(--primary); }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: 'Tajawal';
-            transition: transform 0.1s, opacity 0.2s;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .btn:active { transform: scale(0.98); }
-        .btn-primary { background: var(--primary); color: white; width: 100%; }
-        .btn-success { background: var(--success); color: white; }
-        .btn-danger { background: var(--danger); color: white; padding: 6px 12px; font-size: 0.85rem;}
-        .btn-edit { background: var(--warning); color: white; padding: 6px 12px; font-size: 0.85rem;}
-        .btn-secondary { background: var(--secondary); color: white; }
-        
-        .btn-pdf { background: #dc2626; color: white; }
-        .btn-pdf:hover { background: #b91c1c; }
-
-        /* --- الجداول --- */
-        .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; }
-        table { width: 100%; border-collapse: collapse; min-width: 700px; }
-        thead { background: #f8fafc; }
-        th { padding: 15px; text-align: right; color: var(--text-light); font-size: 0.9rem; font-weight: 700; }
-        td { padding: 15px; border-top: 1px solid #e2e8f0; font-size: 0.95rem; vertical-align: middle;}
-        tr:hover { background-color: #f8fafc; }
-        
+        /* --- الرسوم البيانية --- */
         .charts-container {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -198,35 +136,53 @@
         }
         .chart-box { height: 350px; position: relative; }
 
+        /* --- النماذج والجداول --- */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 600; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Tajawal'; }
+        
+        .btn { padding: 12px 24px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: 'Tajawal'; display: inline-flex; align-items: center; gap: 8px; color: white;}
+        .btn-primary { background: var(--primary); }
+        .btn-danger { background: var(--danger); font-size: 0.8rem; padding: 6px 12px; }
+        .btn-edit { background: var(--warning); font-size: 0.8rem; padding: 6px 12px; }
+        .btn-pdf { background: #dc2626; } /* زر PDF أحمر */
+
+        .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; }
+        table { width: 100%; border-collapse: collapse; min-width: 700px; }
+        thead { background: #f8fafc; }
+        th, td { padding: 15px; text-align: right; border-bottom: 1px solid #e2e8f0; }
+
+        /* --- تبديل الأقسام --- */
         .section { display: none; animation: fadeIn 0.4s; }
         .section.active { display: block; }
-
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* --- استجابة الجوال --- */
         .mobile-menu-btn { display: none; font-size: 1.5rem; background: none; border: none; cursor: pointer; color: var(--primary); }
-
         @media (max-width: 768px) {
             .sidebar { transform: translateX(100%); width: 260px; right: 0; }
             .sidebar.open { transform: translateX(0); }
             .main-content { margin-right: 0; width: 100%; padding: 15px; }
             .mobile-menu-btn { display: block; }
             .charts-container { grid-template-columns: 1fr; }
-            .stat-card { border-right: none; border-top: 4px solid var(--primary); }
         }
 
-        /* تنسيق خاص للتقرير المخفي (PDF Template) */
+        /* ============================================================
+           🔴 تصميم التقرير المخصص للطباعة (مخفي)
+           ============================================================ */
         #pdf-template {
-            display: none; /* مخفي عن الشاشة */
-            direction: rtl;
-            font-family: 'Tajawal', sans-serif;
-            padding: 20px;
+            display: none; 
+            width: 100%; background: white; padding: 20px; direction: rtl; font-family: 'Tajawal', sans-serif; color: #000;
         }
+        .report-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .header-title { font-size: 18px; font-weight: bold; text-align: center; width: 100%; }
         
-        .pdf-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        .pdf-table th, .pdf-table td { border: 1px solid #000; padding: 10px; text-align: center; font-size: 14px; }
-        .pdf-table th { background-color: #f0f0f0; font-weight: bold; }
-        .pdf-footer { margin-top: 30px; text-align: right; font-size: 12px; }
+        .custom-table { width: 100%; border-collapse: collapse; margin-top: 10px; border: 2px solid #000; }
+        .custom-table th, .custom-table td { border: 1px solid #000; padding: 8px; text-align: center; font-size: 14px; vertical-align: middle; }
+        .custom-table th { background-color: #e0e0e0; font-weight: bold; font-size: 15px; }
+        
+        .col-activity { width: 50%; text-align: right !important; font-weight: bold; padding-right: 15px !important; }
+        .total-row { background-color: #f0f0f0; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -236,7 +192,6 @@
         <i class="fa-solid fa-shield-heart"></i>
         <span>أنشطة الوقاية</span>
     </div>
-    
     <nav>
         <div class="nav-link active" onclick="showSection('dashboard', this)">
             <i class="fa-solid fa-chart-pie"></i> لوحة القيادة
@@ -245,58 +200,43 @@
             <i class="fa-solid fa-plus-circle"></i> تسجيل جديد
         </div>
         <div class="nav-link" onclick="showSection('reports', this)">
-            <i class="fa-solid fa-table-list"></i> سجل البيانات
+            <i class="fa-solid fa-table-list"></i> التقارير والطباعة
         </div>
     </nav>
-    
-    <div style="margin-top: auto; font-size: 0.8rem; color: #94a3b8; text-align: center;">
-        نظام إدارة البيانات v2.0
-    </div>
 </aside>
 
 <main class="main-content">
-    
     <div class="header-section">
         <button class="mobile-menu-btn" onclick="toggleSidebar()"><i class="fa-solid fa-bars"></i></button>
-        <div class="page-title">
-            <h2 id="page-header-title">لوحة القيادة</h2>
-            <p id="current-date-display"></p>
+        <div>
+            <h2 id="page-header-title" style="margin:0">لوحة القيادة</h2>
+            <p id="current-date-display" style="margin:5px 0 0; color:#64748b"></p>
         </div>
-        <div class="user-info"></div>
     </div>
 
     <div id="dashboard" class="section active">
         <div class="stats-grid">
-            <div class="stat-card" style="border-color: var(--primary);">
-                <div class="stat-info">
-                    <h3 id="kpi-activities">0</h3>
-                    <p>إجمالي الأنشطة المسجلة</p>
-                </div>
-                <div class="stat-icon" style="color: var(--primary);"><i class="fa-solid fa-clipboard-list"></i></div>
+            <div class="stat-card">
+                <div class="stat-info"><h3 id="kpi-activities">0</h3><p>إجمالي الأنشطة</p></div>
+                <div class="stat-icon"><i class="fa-solid fa-clipboard-list"></i></div>
             </div>
-            <div class="stat-card" style="border-color: var(--success);">
-                <div class="stat-info">
-                    <h3 id="kpi-beneficiaries">0</h3>
-                    <p>إجمالي المستفيدين</p>
-                </div>
+            <div class="stat-card">
+                <div class="stat-info"><h3 id="kpi-beneficiaries">0</h3><p>إجمالي المستفيدين</p></div>
                 <div class="stat-icon" style="color: var(--success);"><i class="fa-solid fa-users"></i></div>
             </div>
-            <div class="stat-card" style="border-color: var(--warning);">
-                <div class="stat-info">
-                    <h3 id="kpi-top-activity" style="font-size: 1.2rem;">-</h3>
-                    <p>النشاط الأكثر تنفيذاً</p>
-                </div>
+            <div class="stat-card">
+                <div class="stat-info"><h3 id="kpi-top-activity" style="font-size:1.2rem">-</h3><p>الأكثر تنفيذاً</p></div>
                 <div class="stat-icon" style="color: var(--warning);"><i class="fa-solid fa-crown"></i></div>
             </div>
         </div>
 
         <div class="charts-container">
             <div class="card chart-box">
-                <h4 style="margin-top:0; color:var(--text-light)">توزيع المستفيدين حسب النشاط</h4>
+                <h4 style="margin-top:0; color:var(--text-light)">توزيع المستفيدين</h4>
                 <canvas id="chartActivities"></canvas>
             </div>
             <div class="card chart-box">
-                <h4 style="margin-top:0; color:var(--text-light)">الأداء خلال الأيام الأخيرة</h4>
+                <h4 style="margin-top:0; color:var(--text-light)">الأداء الأخير</h4>
                 <canvas id="chartTrend"></canvas>
             </div>
         </div>
@@ -304,11 +244,7 @@
 
     <div id="entry" class="section">
         <div class="card" style="max-width: 800px; margin: auto;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h3 style="margin:0; color:var(--primary);">📝 تسجيل نشاط جديد</h3>
-                <button type="button" id="cancel-edit-btn" onclick="resetForm()" class="btn btn-secondary" style="display:none; padding: 5px 15px;">إلغاء التعديل</button>
-            </div>
-            
+            <h3 style="margin-bottom:20px; color:var(--primary);">📝 تسجيل نشاط جديد</h3>
             <form id="data-form">
                 <input type="hidden" id="edit-doc-id"> 
                 <div class="form-grid">
@@ -316,16 +252,14 @@
                         <label>تاريخ النشاط</label>
                         <input type="date" id="activity-date" required>
                     </div>
-                    
                     <div class="form-group">
                         <label>إجمالي المستفيدين</label>
-                        <input type="number" id="beneficiaries" placeholder="مثال: 50" min="0" required>
+                        <input type="number" id="beneficiaries" placeholder="0" min="0" required>
                     </div>
-
                     <div class="form-group" style="grid-column: 1 / -1;">
                         <label>نوع النشاط</label>
                         <select id="activity" required>
-                            <option value="" disabled selected>--- اختر النشاط من القائمة ---</option>
+                            <option value="" disabled selected>--- اختر النشاط ---</option>
                             <option value="1- حملات طرق الأبواب">1- حملات طرق الأبواب</option>
                             <option value="2- لقاءات أسرية">2- لقاءات أسرية</option>
                             <option value="3- لقاءات دينية (مساجد/كنائس)">3- لقاءات دينية (مساجد/كنائس)</option>
@@ -338,11 +272,9 @@
                         </select>
                     </div>
                 </div>
-
-                <div style="margin-top: 20px;">
-                    <button type="submit" id="submit-btn" class="btn btn-primary">
-                        <i class="fa-solid fa-save"></i> حفظ البيانات
-                    </button>
+                <div style="margin-top: 20px; display:flex; gap:10px;">
+                    <button type="submit" id="submit-btn" class="btn btn-primary" style="flex:1">حفظ البيانات</button>
+                    <button type="button" id="cancel-edit-btn" onclick="resetForm()" class="btn" style="background:#64748b; display:none;">إلغاء</button>
                 </div>
             </form>
         </div>
@@ -350,85 +282,59 @@
 
     <div id="reports" class="section">
         <div class="card">
-            <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; background: #f8fafc; padding: 15px; border-radius: 10px;">
-                <div style="flex: 1; min-width: 200px;">
-                    <label style="font-size:0.9rem; font-weight:bold;">من تاريخ:</label>
-                    <input type="date" id="filter-from-date">
-                </div>
-                <div style="flex: 1; min-width: 200px;">
-                    <label style="font-size:0.9rem; font-weight:bold;">إلى تاريخ:</label>
-                    <input type="date" id="filter-to-date">
-                </div>
-                <button onclick="renderTable()" class="btn btn-primary" style="width: auto;">
-                    <i class="fa-solid fa-filter"></i> عرض
-                </button>
-                <button onclick="exportToPDF()" class="btn btn-pdf" style="width: auto;">
-                    <i class="fa-solid fa-file-pdf"></i> طباعة التقرير (PDF)
-                </button>
+            <div style="background:#f8fafc; padding:15px; border-radius:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:end; margin-bottom:20px;">
+                <div style="flex:1"><label>من:</label><input type="date" id="filter-from-date"></div>
+                <div style="flex:1"><label>إلى:</label><input type="date" id="filter-to-date"></div>
+                <button onclick="renderTable()" class="btn btn-primary"><i class="fa-solid fa-filter"></i> عرض</button>
+                <button onclick="exportToPDF()" class="btn btn-pdf"><i class="fa-solid fa-print"></i> طباعة التقرير (رسمي)</button>
             </div>
 
             <div class="table-container">
                 <table id="reports-table">
-                    <thead>
-                        <tr>
-                            <th>التاريخ</th>
-                            <th>النشاط</th>
-                            <th>المستفيدين</th>
-                            <th style="width: 150px;">إجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="data-table-body">
-                        </tbody>
+                    <thead><tr><th>التاريخ</th><th>النشاط</th><th>المستفيدين</th><th>إجراءات</th></tr></thead>
+                    <tbody id="data-table-body"></tbody>
                 </table>
             </div>
-            <div id="table-loading" style="text-align: center; padding: 20px; display: none;">
-                <i class="fa-solid fa-spinner fa-spin fa-2x" style="color: var(--primary);"></i>
-            </div>
+            <div id="table-loading" style="text-align:center; padding:20px; display:none;">جاري التحميل...</div>
         </div>
     </div>
 
     <div id="pdf-template">
-        <div class="pdf-header">
-            <h2>صندوق مكافحة وعلاج الإدمان والتعاطي</h2>
-            <h3>تقرير الأنشطة الوقائية المنفذة</h3>
-            <p id="pdf-date-range" style="margin: 5px 0;">من تاريخ: ... إلى تاريخ: ...</p>
+        <div class="report-header">
+            <div style="width:100px;"><i class="fa-solid fa-hands-holding-child fa-3x"></i></div>
+            <div class="header-title">
+                صندوق مكافحة وعلاج الإدمان والتعاطي<br>
+                <span style="font-size:14px; font-weight:normal;">تقرير الأنشطة الوقائية المنفذة</span><br>
+                <span id="pdf-date-display" style="font-size:12px; font-weight:normal;"></span>
+            </div>
         </div>
-        
-        <table class="pdf-table">
+        <table class="custom-table">
             <thead>
-                <tr>
-                    <th style="width: 40%">الأنشطة الوقائية المنفذة</th>
-                    <th style="width: 30%">عدد الأنشطة</th>
-                    <th style="width: 30%">إجمالي المستفيدين</th>
-                </tr>
+                <tr><th class="col-activity">الأنشطة الوقائية المنفذة</th><th>عدد الأنشطة</th><th>إجمالي المستفيد</th></tr>
             </thead>
-            <tbody id="pdf-table-body">
-                </tbody>
+            <tbody>
+                <tr><td class="col-activity">1- حملات طرق الأبواب</td><td id="count-1">0</td><td id="ben-1">0</td></tr>
+                <tr><td class="col-activity">2- لقاءات أسرية</td><td id="count-2">0</td><td id="ben-2">0</td></tr>
+                <tr><td class="col-activity">3- لقاءات دينية - كنائس - مساجد</td><td id="count-3">0</td><td id="ben-3">0</td></tr>
+                <tr><td class="col-activity" style="line-height:1.5">4- الميدانية (ميادين عامة - مواقف - مناطق محيطة - محال - ورش)</td><td id="count-4">0</td><td id="ben-4">0</td></tr>
+                <tr><td class="col-activity">5- المهرجانات والأنشطة الرياضية والفنية</td><td id="count-5">0</td><td id="ben-5">0</td></tr>
+                <tr><td class="col-activity">6- ورش عمل للاطفال</td><td id="count-6">0</td><td id="ben-6">0</td></tr>
+                <tr><td class="col-activity">7- تدريبات القيادات الطبيعية والشبابية</td><td id="count-7">0</td><td id="ben-7">0</td></tr>
+                <tr><td class="col-activity">8- المجمعات الخدمية (مدارس - مراكز شباب - جمعيات)</td><td id="count-8">0</td><td id="ben-8">0</td></tr>
+            </tbody>
             <tfoot>
-                <tr style="background-color: #f9f9f9; font-weight: bold;">
-                    <td>الإجمالي العام</td>
-                    <td id="pdf-total-activities">0</td>
-                    <td id="pdf-total-beneficiaries">0</td>
-                </tr>
+                <tr class="total-row"><td class="col-activity" style="text-align:center!important">الاجمالي</td><td id="total-count">0</td><td id="total-ben">0</td></tr>
             </tfoot>
         </table>
-
-        <div class="pdf-footer">
-            <p>تم استخراج التقرير بتاريخ: <span id="pdf-print-date"></span></p>
-        </div>
     </div>
 
 </main>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    // ====================================================
-    // ⚙️ إعدادات Firebase
-    // ====================================================
+    // 1. إعدادات Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -437,298 +343,226 @@
         messagingSenderId: "219502671343",
         appId: "1:219502671343:web:b289b11869e25c9a30321a"
     };
-
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const ACTIVITIES_COLLECTION = 'dashboard_preventive_logs';
 
-    let allDataCache = [];
     let chartInstance1 = null;
     let chartInstance2 = null;
 
-    // ====================================================
-    // 🚀 عند تحميل الصفحة
-    // ====================================================
+    // 2. التحميل الأولي
     window.onload = function() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('activity-date').value = today;
+        document.getElementById('filter-to-date').value = today;
         document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         loadDashboardData();
     };
 
-    // ====================================================
-    // 📱 وظائف الواجهة
-    // ====================================================
-    function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('open');
-    }
-
+    // 3. التنقل والقوائم
+    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
     function showSection(sectionId, linkElement) {
-        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
         document.getElementById(sectionId).classList.add('active');
-        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
         linkElement.classList.add('active');
-
-        const titles = { 'dashboard': 'لوحة القيادة', 'entry': 'تسجيل نشاط جديد', 'reports': 'سجل البيانات والتقارير' };
-        document.getElementById('page-header-title').textContent = titles[sectionId];
-
+        
         if(sectionId === 'dashboard') loadDashboardData();
         if(sectionId === 'reports') renderTable();
         
-        if(window.innerWidth <= 768) {
-            document.getElementById('sidebar').classList.remove('open');
-        }
+        if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
     }
 
-    // ====================================================
-    // 💾 إدارة البيانات
-    // ====================================================
-    document.getElementById('data-form').addEventListener('submit', async function(event) {
-        event.preventDefault();
+    // 4. العمليات (حفظ، تعديل، حذف)
+    document.getElementById('data-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
         const btn = document.getElementById('submit-btn');
-        const originalBtnText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المعالجة...';
+        btn.disabled = true; btn.innerText = 'جاري الحفظ...';
 
-        const docId = document.getElementById('edit-doc-id').value;
+        const id = document.getElementById('edit-doc-id').value;
         const data = {
             date: document.getElementById('activity-date').value,
             activity: document.getElementById('activity').value,
             beneficiaries: parseInt(document.getElementById('beneficiaries').value) || 0,
-            count: 1,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            count: 1, timestamp: firebase.firestore.FieldValue.serverTimestamp()
         };
 
         try {
-            if (docId) {
-                await db.collection(ACTIVITIES_COLLECTION).doc(docId).update(data);
-                Swal.fire({ icon: 'success', title: 'تم التعديل', timer: 1500, showConfirmButton: false });
-                resetForm();
+            if(id) {
+                await db.collection(ACTIVITIES_COLLECTION).doc(id).update(data);
+                Swal.fire('تم التعديل', '', 'success');
             } else {
                 await db.collection(ACTIVITIES_COLLECTION).add(data);
-                Swal.fire({ icon: 'success', title: 'تم الحفظ', timer: 1500, showConfirmButton: false });
-                document.getElementById('activity').value = '';
-                document.getElementById('beneficiaries').value = '';
+                Swal.fire('تم الحفظ', '', 'success');
             }
-        } catch (error) {
-            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل الاتصال' });
-        } finally {
-            btn.disabled = false;
-            btn.innerHTML = originalBtnText;
-        }
+            resetForm();
+        } catch(err) { Swal.fire('خطأ', 'تأكد من الانترنت', 'error'); }
+        btn.disabled = false; btn.innerText = 'حفظ البيانات';
     });
 
-    async function loadDataFromFireStore(fromDate = null, toDate = null) {
-        let q = db.collection(ACTIVITIES_COLLECTION).orderBy('date', 'desc');
-        if (fromDate && toDate) q = q.where('date', '>=', fromDate).where('date', '<=', toDate);
-        const snapshot = await q.get();
-        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    }
-
     async function deleteItem(id) {
-        const result = await Swal.fire({ title: 'هل أنت متأكد؟', icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، احذف!', cancelButtonText: 'إلغاء' });
-        if (result.isConfirmed) {
+        const r = await Swal.fire({ title: 'حذف؟', icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم', cancelButtonText: 'لا' });
+        if(r.isConfirmed) {
             await db.collection(ACTIVITIES_COLLECTION).doc(id).delete();
-            Swal.fire('تم الحذف!', '', 'success');
             renderTable(); loadDashboardData();
+            Swal.fire('تم الحذف', '', 'success');
         }
     }
 
-    function editItem(id, date, activity, beneficiaries) {
-        document.querySelectorAll('.nav-link')[1].click(); 
+    function editItem(id, date, act, ben) {
+        document.querySelectorAll('.nav-link')[1].click(); // الذهاب للتبويب الثاني
         document.getElementById('edit-doc-id').value = id;
         document.getElementById('activity-date').value = date;
-        document.getElementById('activity').value = activity;
-        document.getElementById('beneficiaries').value = beneficiaries;
-        
-        const btn = document.getElementById('submit-btn');
-        btn.innerHTML = '<i class="fa-solid fa-pen"></i> تحديث البيانات';
-        btn.classList.add('btn-warning');
+        document.getElementById('activity').value = act;
+        document.getElementById('beneficiaries').value = ben;
         document.getElementById('cancel-edit-btn').style.display = 'block';
+        document.getElementById('submit-btn').innerText = 'تعديل البيانات';
     }
 
     function resetForm() {
         document.getElementById('data-form').reset();
         document.getElementById('edit-doc-id').value = '';
-        document.getElementById('activity-date').value = new Date().toISOString().split('T')[0];
-        const btn = document.getElementById('submit-btn');
-        btn.innerHTML = '<i class="fa-solid fa-save"></i> حفظ البيانات';
-        btn.classList.remove('btn-warning');
         document.getElementById('cancel-edit-btn').style.display = 'none';
+        document.getElementById('submit-btn').innerText = 'حفظ البيانات';
     }
 
-    // ====================================================
-    // 📊 لوحة القيادة
-    // ====================================================
+    // 5. لوحة القيادة والرسوم البيانية
     async function loadDashboardData() {
-        const data = await loadDataFromFireStore();
-        allDataCache = data;
-        const totalActivities = data.length;
-        const totalBeneficiaries = data.reduce((sum, item) => sum + (parseInt(item.beneficiaries) || 0), 0);
-        
-        const activityCounts = {};
-        data.forEach(item => { activityCounts[item.activity] = (activityCounts[item.activity] || 0) + 1; });
-        let topActivity = "-";
-        let maxCount = 0;
-        for (const [key, value] of Object.entries(activityCounts)) {
-            if (value > maxCount) { maxCount = value; topActivity = key; }
-        }
+        const snap = await db.collection(ACTIVITIES_COLLECTION).get();
+        const data = snap.docs.map(d => d.data());
 
-        document.getElementById("kpi-activities").textContent = totalActivities.toLocaleString('ar-EG');
-        document.getElementById("kpi-beneficiaries").textContent = totalBeneficiaries.toLocaleString('ar-EG');
-        document.getElementById('kpi-top-activity').textContent = topActivity.split(' ')[0] + '...';
+        // KPIs
+        const totalActs = data.length;
+        const totalBen = data.reduce((s, i) => s + (i.beneficiaries || 0), 0);
+        
+        // الأكثر تكراراً
+        const counts = {}; data.forEach(i => counts[i.activity] = (counts[i.activity]||0)+1);
+        let topAct = "-", max = 0;
+        for(let k in counts) if(counts[k] > max) { max = counts[k]; topAct = k; }
+
+        document.getElementById('kpi-activities').innerText = totalActs.toLocaleString('ar-EG');
+        document.getElementById('kpi-beneficiaries').innerText = totalBen.toLocaleString('ar-EG');
+        document.getElementById('kpi-top-activity').innerText = topAct.split(' ')[0] + '..';
 
         updateCharts(data);
     }
 
     function updateCharts(data) {
-        const beneficiariesByActivity = {};
-        data.forEach(item => {
-            const act = item.activity.substring(0, 15) + (item.activity.length>15 ? '..' : ''); 
-            beneficiariesByActivity[act] = (beneficiariesByActivity[act] || 0) + item.beneficiaries;
-        });
+        // Doughnut Data
+        const benByAct = {};
+        data.forEach(i => benByAct[i.activity] = (benByAct[i.activity]||0) + i.beneficiaries);
 
-        const timelineData = {};
-        const sortedDates = data.sort((a,b) => new Date(a.date) - new Date(b.date));
-        sortedDates.forEach(item => {
-            timelineData[item.date] = (timelineData[item.date] || 0) + item.beneficiaries;
-        });
+        // Bar Data (Timeline)
+        const timeline = {};
+        data.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(i => timeline[i.date] = (timeline[i.date]||0) + i.beneficiaries);
 
         if(chartInstance1) chartInstance1.destroy();
         if(chartInstance2) chartInstance2.destroy();
 
+        // Chart 1
         const ctx1 = document.getElementById('chartActivities').getContext('2d');
         chartInstance1 = new Chart(ctx1, {
             type: 'doughnut',
             data: {
-                labels: Object.keys(beneficiariesByActivity),
-                datasets: [{ data: Object.values(beneficiariesByActivity), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderWidth: 1 }]
+                labels: Object.keys(benByAct),
+                datasets: [{ data: Object.values(benByAct), backgroundColor: ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6'] }]
             },
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: {font:{family:'Tajawal'}} } } }
         });
 
+        // Chart 2
         const ctx2 = document.getElementById('chartTrend').getContext('2d');
-        const dates = Object.keys(timelineData).slice(-10);
-        const values = Object.values(timelineData).slice(-10);
         chartInstance2 = new Chart(ctx2, {
             type: 'bar',
-            data: { labels: dates, datasets: [{ label: 'عدد المستفيدين', data: values, backgroundColor: '#3b82f6', borderRadius: 5 }] },
+            data: {
+                labels: Object.keys(timeline).slice(-7), // آخر 7 أيام
+                datasets: [{ label: 'مستفيدين', data: Object.values(timeline).slice(-7), backgroundColor: '#3b82f6', borderRadius: 4 }]
+            },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
         });
     }
 
-    // ====================================================
-    // 📋 الجدول
-    // ====================================================
+    // 6. الجدول والمعاينة
     async function renderTable() {
         const tbody = document.getElementById('data-table-body');
-        const fromDate = document.getElementById('filter-from-date').value;
-        const toDate = document.getElementById('filter-to-date').value;
-
-        tbody.innerHTML = '';
-        document.getElementById('table-loading').style.display = 'block';
-
-        const data = await loadDataFromFireStore(fromDate, toDate);
+        const from = document.getElementById('filter-from-date').value;
+        const to = document.getElementById('filter-to-date').value;
         
+        tbody.innerHTML = ''; document.getElementById('table-loading').style.display = 'block';
+        
+        let q = db.collection(ACTIVITIES_COLLECTION).orderBy('date', 'desc');
+        if(from && to) q = q.where('date', '>=', from).where('date', '<=', to);
+        
+        const snap = await q.get();
         document.getElementById('table-loading').style.display = 'none';
 
-        if(data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:#94a3b8;">لا توجد بيانات</td></tr>`;
-            return;
-        }
+        if(snap.empty) { tbody.innerHTML = '<tr><td colspan="4">لا توجد بيانات</td></tr>'; return; }
 
-        let totalBen = 0;
-        data.forEach(item => {
-            totalBen += item.beneficiaries;
-            const row = `
+        snap.docs.forEach(doc => {
+            const d = doc.data();
+            tbody.innerHTML += `
                 <tr>
-                    <td>${item.date}</td>
-                    <td style="font-weight:600; color:var(--primary-dark)">${item.activity}</td>
-                    <td><span style="background:#dcfce7; color:#166534; padding:4px 8px; border-radius:6px; font-weight:bold;">${item.beneficiaries.toLocaleString('ar-EG')}</span></td>
+                    <td>${d.date}</td>
+                    <td style="font-weight:bold">${d.activity}</td>
+                    <td><span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:10px">${d.beneficiaries}</span></td>
                     <td>
-                        <button class="btn btn-edit" onclick="editItem('${item.id}', '${item.date}', '${item.activity}', ${item.beneficiaries})"><i class="fa-solid fa-pen"></i></button>
-                        <button class="btn btn-danger" onclick="deleteItem('${item.id}')"><i class="fa-solid fa-trash"></i></button>
+                        <button onclick="editItem('${doc.id}','${d.date}','${d.activity}',${d.beneficiaries})" class="btn btn-edit"><i class="fa-solid fa-pen"></i></button>
+                        <button onclick="deleteItem('${doc.id}')" class="btn btn-danger"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>`;
-            tbody.insertAdjacentHTML('beforeend', row);
         });
-
-        tbody.insertAdjacentHTML('beforeend', `<tr style="background:#eff6ff; font-weight:bold;"><td colspan="2">الإجمالي:</td><td colspan="2">${totalBen.toLocaleString('ar-EG')}</td></tr>`);
     }
 
-    // ====================================================
-    // 📄 تصدير PDF (الحل النهائي)
-    // ====================================================
+    // 7. طباعة PDF (التنسيق الثابت)
     async function exportToPDF() {
-        // 1. جلب البيانات
-        const fromDate = document.getElementById('filter-from-date').value;
-        const toDate = document.getElementById('filter-to-date').value;
+        const from = document.getElementById('filter-from-date').value;
+        const to = document.getElementById('filter-to-date').value;
         
-        Swal.fire({title: 'جاري تحضير الملف...', didOpen: () => { Swal.showLoading() }});
+        Swal.fire({title: 'جاري التحضير...', didOpen: () => Swal.showLoading()});
 
-        const rawData = await loadDataFromFireStore(fromDate, toDate);
+        let q = db.collection(ACTIVITIES_COLLECTION);
+        if(from && to) q = q.where('date', '>=', from).where('date', '<=', to);
+        const snap = await q.get();
 
-        if (rawData.length === 0) {
-            Swal.close();
-            Swal.fire('تنبيه', 'لا توجد بيانات لتصديرها', 'info');
-            return;
+        // تصفير العدادات
+        let stats = {}; for(let i=1; i<=8; i++) stats[i] = { c:0, b:0 };
+
+        // توزيع البيانات
+        snap.docs.forEach(doc => {
+            const d = doc.data();
+            const act = d.activity;
+            const ben = parseInt(d.beneficiaries) || 0;
+
+            if(act.includes('1-') || act.includes('طرق الأبواب')) { stats[1].c++; stats[1].b += ben; }
+            else if(act.includes('2-') || act.includes('أسرية')) { stats[2].c++; stats[2].b += ben; }
+            else if(act.includes('3-') || act.includes('دينية') || act.includes('مساجد')) { stats[3].c++; stats[3].b += ben; }
+            else if(act.includes('4-') || act.includes('ميدانية')) { stats[4].c++; stats[4].b += ben; }
+            else if(act.includes('5-') || act.includes('مهرجانات')) { stats[5].c++; stats[5].b += ben; }
+            else if(act.includes('6-') || act.includes('ورش') || act.includes('أطفال')) { stats[6].c++; stats[6].b += ben; }
+            else if(act.includes('7-') || act.includes('تدريبات') || act.includes('القيادات')) { stats[7].c++; stats[7].b += ben; }
+            else if(act.includes('8-') || act.includes('المجمعات') || act.includes('مدارس')) { stats[8].c++; stats[8].b += ben; }
+        });
+
+        // تعبئة الجدول
+        let totC=0, totB=0;
+        for(let i=1; i<=8; i++) {
+            document.getElementById(`count-${i}`).innerText = stats[i].c.toLocaleString('ar-EG');
+            document.getElementById(`ben-${i}`).innerText = stats[i].b.toLocaleString('ar-EG');
+            totC += stats[i].c; totB += stats[i].b;
         }
+        document.getElementById('total-count').innerText = totC.toLocaleString('ar-EG');
+        document.getElementById('total-ben').innerText = totB.toLocaleString('ar-EG');
 
-        // 2. تجهيز البيانات (Aggregation)
-        const summary = {};
-        rawData.forEach(item => {
-            if (!summary[item.activity]) summary[item.activity] = { count: 0, beneficiaries: 0 };
-            summary[item.activity].count += 1;
-            summary[item.activity].beneficiaries += parseInt(item.beneficiaries || 0);
-        });
+        // التاريخ
+        if(from && to) document.getElementById('pdf-date-display').innerText = `من ${from} إلى ${to}`;
+        else document.getElementById('pdf-date-display').innerText = `حتى تاريخ اليوم`;
 
-        // 3. ملء قالب HTML المخفي بالبيانات
-        const pdfBody = document.getElementById('pdf-table-body');
-        pdfBody.innerHTML = '';
-        let totalActs = 0;
-        let totalBen = 0;
-
-        Object.keys(summary).forEach(key => {
-            totalActs += summary[key].count;
-            totalBen += summary[key].beneficiaries;
-            const row = `<tr>
-                <td style="text-align:right">${key}</td>
-                <td>${summary[key].count.toLocaleString('ar-EG')}</td>
-                <td>${summary[key].beneficiaries.toLocaleString('ar-EG')}</td>
-            </tr>`;
-            pdfBody.insertAdjacentHTML('beforeend', row);
-        });
-
-        // تحديث الإجماليات والتواريخ في القالب
-        document.getElementById('pdf-total-activities').innerText = totalActs.toLocaleString('ar-EG');
-        document.getElementById('pdf-total-beneficiaries').innerText = totalBen.toLocaleString('ar-EG');
-        
-        if (fromDate && toDate) {
-            document.getElementById('pdf-date-range').innerText = `من تاريخ: ${fromDate} إلى تاريخ: ${toDate}`;
-        } else {
-            document.getElementById('pdf-date-range').innerText = `تقرير شامل حتى تاريخ اليوم`;
-        }
-        document.getElementById('pdf-print-date').innerText = new Date().toLocaleDateString('ar-EG');
-
-        // 4. إظهار القالب مؤقتاً للتصوير (Hack to generate PDF from hidden element)
-        const element = document.getElementById('pdf-template');
-        element.style.display = 'block'; // يجب أن يظهر لكي يتم تصويره
-
-        const opt = {
-            margin:       10,
-            filename:     `Preventive_Report_${new Date().toISOString().split('T')[0]}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        // التوليد والحفظ
-        html2pdf().set(opt).from(element).save().then(() => {
-            element.style.display = 'none'; // إخفاء القالب مرة أخرى
-            Swal.close();
-        });
+        // الطباعة
+        const el = document.getElementById('pdf-template');
+        el.style.display = 'block';
+        html2pdf().set({ margin: 10, filename: 'Report.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4' } }).from(el).save().then(() => { el.style.display = 'none'; Swal.close(); });
     }
-
 </script>
+
 </body>
-    </html>
+                                          </html>
