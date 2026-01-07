@@ -388,24 +388,27 @@
     </div>
 
     <div id="pdf-template">
-        <div class="pdf-header">
-            <h2>صندوق مكافحة وعلاج الإدمان والتعاطي</h2>
-            <h3>تقرير الأنشطة الوقائية المنفذة</h3>
-            <p id="pdf-date-range" style="margin: 5px 0;">من تاريخ: ... إلى تاريخ: ...</p>
+        <div class="pdf-header" style="border: none; margin-bottom: 10px; text-align: center;">
+            <img id="pdf-logo-img" src="" style="width: 100%; max-width: 100%; height: auto;" alt="Header">
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h3 style="margin: 5px 0; text-decoration: underline;">تقرير الأنشطة الوقائية المنفذة</h3>
+            <p id="pdf-date-range" style="margin: 5px 0; font-size: 14px;">من تاريخ: ... إلى تاريخ: ...</p>
         </div>
         
         <table class="pdf-table">
             <thead>
                 <tr>
-                    <th style="width: 40%">الأنشطة الوقائية المنفذة</th>
-                    <th style="width: 30%">عدد الأنشطة</th>
-                    <th style="width: 30%">إجمالي المستفيدين</th>
+                    <th style="width: 40%; background-color: #e5e7eb;">الأنشطة الوقائية المنفذة</th>
+                    <th style="width: 30%; background-color: #e5e7eb;">عدد الأنشطة</th>
+                    <th style="width: 30%; background-color: #e5e7eb;">إجمالي المستفيدين</th>
                 </tr>
             </thead>
             <tbody id="pdf-table-body">
                 </tbody>
             <tfoot>
-                <tr style="background-color: #f9f9f9; font-weight: bold;">
+                <tr style="background-color: #f3f4f6; font-weight: bold;">
                     <td>الإجمالي العام</td>
                     <td id="pdf-total-activities">0</td>
                     <td id="pdf-total-beneficiaries">0</td>
@@ -426,6 +429,12 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+    // ====================================================
+    // 🖼️ مكان كود الصورة Base64
+    // ====================================================
+    // 🔴 ضع كود الـ Base64 الطويل جداً هنا بدلاً من النص الموجود بين علامات التنصيص
+    const PDF_HEADER_IMG = "data:image/jpeg;base64, ...... ضع الكود هنا ......";
+
     // ====================================================
     // ⚙️ إعدادات Firebase
     // ====================================================
@@ -453,8 +462,38 @@
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('activity-date').value = today;
         document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        
+        // تعيين الصورة للقالب المخفي عند التحميل
+        if(PDF_HEADER_IMG && PDF_HEADER_IMG.length > 50) {
+            document.getElementById('pdf-logo-img').src = PDF_HEADER_IMG;
+        }
+
         loadDashboardData();
     };
+
+    // ====================================================
+    // 🔢 دالة تحريك الأرقام (Animation Counter)
+    // ====================================================
+    function animateValue(obj, start, end, duration) {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            
+            // معادلة الحركة لجعلها تبدأ سريعاً وتبطئ في النهاية (Ease-out)
+            const easeOutQuad = (t) => t * (2 - t);
+            const currentVal = Math.floor(easeOutQuad(progress) * (end - start) + start);
+            
+            obj.innerHTML = currentVal.toLocaleString('ar-EG');
+            
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            } else {
+                obj.innerHTML = end.toLocaleString('ar-EG'); // التأكد من الرقم النهائي
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
 
     // ====================================================
     // 📱 وظائف الواجهة
@@ -558,7 +597,7 @@
     }
 
     // ====================================================
-    // 📊 لوحة القيادة
+    // 📊 لوحة القيادة (Dashboard) - مع العدادات
     // ====================================================
     async function loadDashboardData() {
         const data = await loadDataFromFireStore();
@@ -574,8 +613,14 @@
             if (value > maxCount) { maxCount = value; topActivity = key; }
         }
 
-        document.getElementById("kpi-activities").textContent = totalActivities.toLocaleString('ar-EG');
-        document.getElementById("kpi-beneficiaries").textContent = totalBeneficiaries.toLocaleString('ar-EG');
+        // تشغيل الأنيميشن للأرقام
+        const kpiActivities = document.getElementById("kpi-activities");
+        const kpiBeneficiaries = document.getElementById("kpi-beneficiaries");
+
+        // التأكد من عدم إعادة التشغيل إذا كانت البيانات نفسها (اختياري، هنا سنقوم بالتحديث دائماً)
+        animateValue(kpiActivities, 0, totalActivities, 2000); // مدة 2 ثانية
+        animateValue(kpiBeneficiaries, 0, totalBeneficiaries, 2500); // مدة 2.5 ثانية
+
         document.getElementById('kpi-top-activity').textContent = topActivity.split(' ')[0] + '...';
 
         updateCharts(data);
@@ -657,10 +702,9 @@
     }
 
     // ====================================================
-    // 📄 تصدير PDF (الحل النهائي)
+    // 📄 تصدير PDF (استخدام Base64 للصورة)
     // ====================================================
     async function exportToPDF() {
-        // 1. جلب البيانات
         const fromDate = document.getElementById('filter-from-date').value;
         const toDate = document.getElementById('filter-to-date').value;
         
@@ -674,7 +718,6 @@
             return;
         }
 
-        // 2. تجهيز البيانات (Aggregation)
         const summary = {};
         rawData.forEach(item => {
             if (!summary[item.activity]) summary[item.activity] = { count: 0, beneficiaries: 0 };
@@ -682,7 +725,6 @@
             summary[item.activity].beneficiaries += parseInt(item.beneficiaries || 0);
         });
 
-        // 3. ملء قالب HTML المخفي بالبيانات
         const pdfBody = document.getElementById('pdf-table-body');
         pdfBody.innerHTML = '';
         let totalActs = 0;
@@ -699,7 +741,6 @@
             pdfBody.insertAdjacentHTML('beforeend', row);
         });
 
-        // تحديث الإجماليات والتواريخ في القالب
         document.getElementById('pdf-total-activities').innerText = totalActs.toLocaleString('ar-EG');
         document.getElementById('pdf-total-beneficiaries').innerText = totalBen.toLocaleString('ar-EG');
         
@@ -710,21 +751,24 @@
         }
         document.getElementById('pdf-print-date').innerText = new Date().toLocaleDateString('ar-EG');
 
-        // 4. إظهار القالب مؤقتاً للتصوير (Hack to generate PDF from hidden element)
+        // التأكد من وجود الصورة قبل الطباعة
+        if(!document.getElementById('pdf-logo-img').src.includes('base64')) {
+             console.warn("لم يتم وضع كود Base64 للصورة!");
+        }
+
         const element = document.getElementById('pdf-template');
-        element.style.display = 'block'; // يجب أن يظهر لكي يتم تصويره
+        element.style.display = 'block'; 
 
         const opt = {
-            margin:       10,
+            margin:       [5, 10, 10, 10], // هوامش أصغر لاستيعاب الصورة
             filename:     `Preventive_Report_${new Date().toISOString().split('T')[0]}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2 },
+            image:        { type: 'jpeg', quality: 1.0 }, // جودة عالية للصورة
+            html2canvas:  { scale: 2, useCORS: true },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        // التوليد والحفظ
         html2pdf().set(opt).from(element).save().then(() => {
-            element.style.display = 'none'; // إخفاء القالب مرة أخرى
+            element.style.display = 'none'; 
             Swal.close();
         });
     }
