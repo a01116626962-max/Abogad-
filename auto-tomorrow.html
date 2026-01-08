@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نظام إدارة الأنشطة الوقائية</title>
-    
     <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -34,7 +33,6 @@
             margin: 0;
             display: flex;
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
         /* --- القائمة الجانبية --- */
@@ -216,57 +214,19 @@
             .stat-card { border-right: none; border-top: 4px solid var(--primary); }
         }
 
-        /* ========================================= */
-        /* 📄 تنسيق تقرير PDF (الإصلاح الجديد)      */
-        /* ========================================= */
+        /* تنسيق خاص للتقرير المخفي (PDF Template) */
         #pdf-template {
-            position: absolute;
-            left: -9999px; /* إخفاء خارج الشاشة بدلاً من display:none */
-            top: 0;
-            width: 210mm; /* عرض A4 */
-            min-height: 297mm;
-            padding: 15mm;
-            background: white;
+            display: none; /* مخفي عن الشاشة */
             direction: rtl;
             font-family: 'Tajawal', sans-serif;
-            color: #000;
-            z-index: 99999;
+            padding: 20px;
         }
         
-        .pdf-header { text-align: center; margin-bottom: 20px; }
-        .pdf-header img { width: 100%; max-height: 150px; object-fit: contain; }
-        
-        .report-title {
-            text-align: center;
-            font-size: 20px;
-            font-weight: 800;
-            margin: 20px 0;
-            text-decoration: underline;
-            color: #000;
-        }
-
-        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-        .pdf-table th, .pdf-table td { border: 1px solid #000 !important; padding: 8px 10px; text-align: center; color: #000; }
-        
-        /* تلوين الرأسية بالرمادي وتثبيت اللون للطباعة */
-        .pdf-table th { 
-            background-color: #e5e7eb !important; 
-            font-weight: 800;
-            -webkit-print-color-adjust: exact; 
-        }
-
-        /* اسم النشاط يمين */
-        .pdf-table td:first-child { text-align: right; font-weight: 600; width: 45%; }
-        
-        .pdf-footer { 
-            margin-top: 40px; 
-            text-align: left; 
-            font-size: 12px; 
-            border-top: 1px solid #000; 
-            padding-top: 10px; 
-            width: 100%;
-        }
-
+        .pdf-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+        .pdf-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .pdf-table th, .pdf-table td { border: 1px solid #000; padding: 10px; text-align: center; font-size: 14px; }
+        .pdf-table th { background-color: #f0f0f0; font-weight: bold; }
+        .pdf-footer { margin-top: 30px; text-align: right; font-size: 12px; }
     </style>
 </head>
 <body>
@@ -290,7 +250,7 @@
     </nav>
     
     <div style="margin-top: auto; font-size: 0.8rem; color: #94a3b8; text-align: center;">
-        نظام إدارة البيانات v2.1
+        نظام إدارة البيانات v2.0
     </div>
 </aside>
 
@@ -403,7 +363,7 @@
                     <i class="fa-solid fa-filter"></i> عرض
                 </button>
                 <button onclick="exportToPDF()" class="btn btn-pdf" style="width: auto;">
-                    <i class="fa-solid fa-file-pdf"></i> تصدير التقرير (PDF)
+                    <i class="fa-solid fa-file-pdf"></i> طباعة التقرير (PDF)
                 </button>
             </div>
 
@@ -428,21 +388,21 @@
     </div>
 
     <div id="pdf-template">
-        <div class="pdf-header">
-            <img id="pdf-logo-img" src="" alt="Header Logo">
+        <div class="pdf-header" style="border: none; margin-bottom: 10px; text-align: center;">
+            <img id="pdf-logo-img" src="" style="width: 100%; max-width: 100%; height: auto;" alt="Header">
         </div>
         
-        <div class="report-title">
-            تقرير الأنشطة الوقائية المنفذة
-            <p id="pdf-date-range" style="margin: 5px 0; font-size: 14px; font-weight: normal; text-decoration: none;"></p>
+        <div style="text-align: center; margin-bottom: 20px;">
+            <h3 style="margin: 5px 0; text-decoration: underline;">تقرير الأنشطة الوقائية المنفذة</h3>
+            <p id="pdf-date-range" style="margin: 5px 0; font-size: 14px;">من تاريخ: ... إلى تاريخ: ...</p>
         </div>
         
         <table class="pdf-table">
             <thead>
                 <tr>
-                    <th style="width: 45%;">الأنشطة الوقائية المنفذة</th>
-                    <th style="width: 25%;">عدد الأنشطة</th>
-                    <th style="width: 30%;">إجمالي المستفيدين</th>
+                    <th style="width: 40%; background-color: #e5e7eb;">الأنشطة الوقائية المنفذة</th>
+                    <th style="width: 30%; background-color: #e5e7eb;">عدد الأنشطة</th>
+                    <th style="width: 30%; background-color: #e5e7eb;">إجمالي المستفيدين</th>
                 </tr>
             </thead>
             <tbody id="pdf-table-body">
@@ -469,16 +429,15 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    // =========================================================================
-    // 🛑🛑🛑 منطقة وضع كود الصورة 🛑🛑🛑
-    // قم بلصق كود الـ Base64 الطويل جداً بين علامتي التنصيص في الأسفل
-    // =========================================================================
-    
-    const PDF_HEADER_IMG = ""; // 👈 ضع الكود هنا
+    // ====================================================
+    // 🖼️ مكان كود الصورة Base64
+    // ====================================================
+    // 🔴 ضع كود الـ Base64 الطويل جداً هنا بدلاً من النص الموجود بين علامات التنصيص
+    const PDF_HEADER_IMG = "data:image/jpeg;base64, ...... ضع الكود هنا ......";
 
-    // =========================================================================
-    
-    // إعدادات Firebase
+    // ====================================================
+    // ⚙️ إعدادات Firebase
+    // ====================================================
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -492,27 +451,56 @@
     const db = firebase.firestore();
     const ACTIVITIES_COLLECTION = 'dashboard_preventive_logs';
 
+    let allDataCache = [];
     let chartInstance1 = null;
     let chartInstance2 = null;
 
-    // --- عند التحميل ---
+    // ====================================================
+    // 🚀 عند تحميل الصفحة
+    // ====================================================
     window.onload = function() {
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('activity-date').value = today;
         document.getElementById('current-date-display').textContent = new Date().toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         
-        // تعيين الصورة من المتغير
+        // تعيين الصورة للقالب المخفي عند التحميل
         if(PDF_HEADER_IMG && PDF_HEADER_IMG.length > 50) {
             document.getElementById('pdf-logo-img').src = PDF_HEADER_IMG;
-        } else {
-            document.getElementById('pdf-logo-img').style.display = 'none'; // إخفاء إذا لم توجد صورة
         }
 
         loadDashboardData();
     };
 
-    // --- دوال الواجهة ---
-    function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+    // ====================================================
+    // 🔢 دالة تحريك الأرقام (Animation Counter)
+    // ====================================================
+    function animateValue(obj, start, end, duration) {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            
+            // معادلة الحركة لجعلها تبدأ سريعاً وتبطئ في النهاية (Ease-out)
+            const easeOutQuad = (t) => t * (2 - t);
+            const currentVal = Math.floor(easeOutQuad(progress) * (end - start) + start);
+            
+            obj.innerHTML = currentVal.toLocaleString('ar-EG');
+            
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            } else {
+                obj.innerHTML = end.toLocaleString('ar-EG'); // التأكد من الرقم النهائي
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    // ====================================================
+    // 📱 وظائف الواجهة
+    // ====================================================
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('open');
+    }
 
     function showSection(sectionId, linkElement) {
         document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
@@ -525,73 +513,50 @@
 
         if(sectionId === 'dashboard') loadDashboardData();
         if(sectionId === 'reports') renderTable();
-        if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('open');
-    }
-
-    // --- الرسوم البيانية والأرقام ---
-    function animateValue(obj, start, end, duration) {
-        let startTimestamp = null;
-        const step = (timestamp) => {
-            if (!startTimestamp) startTimestamp = timestamp;
-            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            obj.innerHTML = Math.floor(progress * (end - start) + start).toLocaleString('ar-EG');
-            if (progress < 1) window.requestAnimationFrame(step);
-            else obj.innerHTML = end.toLocaleString('ar-EG');
-        };
-        window.requestAnimationFrame(step);
-    }
-
-    async function loadDashboardData() {
-        const data = await loadDataFromFireStore();
-        const totalActivities = data.length;
-        const totalBeneficiaries = data.reduce((sum, item) => sum + (parseInt(item.beneficiaries) || 0), 0);
         
-        const activityCounts = {};
-        data.forEach(item => { activityCounts[item.activity] = (activityCounts[item.activity] || 0) + 1; });
-        
-        let topActivity = "-";
-        let maxCount = 0;
-        for (const [key, value] of Object.entries(activityCounts)) {
-            if (value > maxCount) { maxCount = value; topActivity = key; }
+        if(window.innerWidth <= 768) {
+            document.getElementById('sidebar').classList.remove('open');
         }
-
-        animateValue(document.getElementById("kpi-activities"), 0, totalActivities, 1500);
-        animateValue(document.getElementById("kpi-beneficiaries"), 0, totalBeneficiaries, 1500);
-        document.getElementById('kpi-top-activity').textContent = topActivity.split(' ')[0] + '...';
-
-        updateCharts(data);
     }
 
-    function updateCharts(data) {
-        const beneficiariesByActivity = {};
-        data.forEach(item => {
-            const act = item.activity.substring(0, 15) + (item.activity.length>15 ? '..' : ''); 
-            beneficiariesByActivity[act] = (beneficiariesByActivity[act] || 0) + item.beneficiaries;
-        });
+    // ====================================================
+    // 💾 إدارة البيانات
+    // ====================================================
+    document.getElementById('data-form').addEventListener('submit', async function(event) {
+        event.preventDefault();
+        const btn = document.getElementById('submit-btn');
+        const originalBtnText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري المعالجة...';
 
-        const timelineData = {};
-        const sortedDates = data.sort((a,b) => new Date(a.date) - new Date(b.date));
-        sortedDates.forEach(item => { timelineData[item.date] = (timelineData[item.date] || 0) + item.beneficiaries; });
+        const docId = document.getElementById('edit-doc-id').value;
+        const data = {
+            date: document.getElementById('activity-date').value,
+            activity: document.getElementById('activity').value,
+            beneficiaries: parseInt(document.getElementById('beneficiaries').value) || 0,
+            count: 1,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
 
-        if(chartInstance1) chartInstance1.destroy();
-        if(chartInstance2) chartInstance2.destroy();
+        try {
+            if (docId) {
+                await db.collection(ACTIVITIES_COLLECTION).doc(docId).update(data);
+                Swal.fire({ icon: 'success', title: 'تم التعديل', timer: 1500, showConfirmButton: false });
+                resetForm();
+            } else {
+                await db.collection(ACTIVITIES_COLLECTION).add(data);
+                Swal.fire({ icon: 'success', title: 'تم الحفظ', timer: 1500, showConfirmButton: false });
+                document.getElementById('activity').value = '';
+                document.getElementById('beneficiaries').value = '';
+            }
+        } catch (error) {
+            Swal.fire({ icon: 'error', title: 'خطأ', text: 'فشل الاتصال' });
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnText;
+        }
+    });
 
-        const ctx1 = document.getElementById('chartActivities').getContext('2d');
-        chartInstance1 = new Chart(ctx1, {
-            type: 'doughnut',
-            data: { labels: Object.keys(beneficiariesByActivity), datasets: [{ data: Object.values(beneficiariesByActivity), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderWidth: 1 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: {font:{family:'Tajawal'}} } } }
-        });
-
-        const ctx2 = document.getElementById('chartTrend').getContext('2d');
-        chartInstance2 = new Chart(ctx2, {
-            type: 'bar',
-            data: { labels: Object.keys(timelineData).slice(-10), datasets: [{ label: 'المستفيدين', data: Object.values(timelineData).slice(-10), backgroundColor: '#3b82f6', borderRadius: 5 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-        });
-    }
-
-    // --- قاعدة البيانات ---
     async function loadDataFromFireStore(fromDate = null, toDate = null) {
         let q = db.collection(ACTIVITIES_COLLECTION).orderBy('date', 'desc');
         if (fromDate && toDate) q = q.where('date', '>=', fromDate).where('date', '<=', toDate);
@@ -599,40 +564,12 @@
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     }
 
-    // حفظ البيانات
-    document.getElementById('data-form').addEventListener('submit', async function(event) {
-        event.preventDefault();
-        const btn = document.getElementById('submit-btn');
-        const originalText = btn.innerHTML;
-        btn.disabled = true; btn.innerHTML = 'جاري الحفظ...';
-
-        const docId = document.getElementById('edit-doc-id').value;
-        const data = {
-            date: document.getElementById('activity-date').value,
-            activity: document.getElementById('activity').value,
-            beneficiaries: parseInt(document.getElementById('beneficiaries').value) || 0,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        };
-
-        try {
-            if (docId) {
-                await db.collection(ACTIVITIES_COLLECTION).doc(docId).update(data);
-                Swal.fire({icon:'success', title:'تم التعديل', timer:1500, showConfirmButton:false});
-            } else {
-                await db.collection(ACTIVITIES_COLLECTION).add(data);
-                Swal.fire({icon:'success', title:'تم الحفظ', timer:1500, showConfirmButton:false});
-            }
-            resetForm();
-        } catch (e) { Swal.fire('خطأ', 'تأكد من الاتصال بالإنترنت', 'error'); } 
-        finally { btn.disabled = false; btn.innerHTML = originalText; }
-    });
-
-    // حذف وتعديل
     async function deleteItem(id) {
-        if((await Swal.fire({title:'حذف؟', icon:'warning', showCancelButton:true, confirmButtonText:'نعم', cancelButtonText:'لا'})).isConfirmed) {
+        const result = await Swal.fire({ title: 'هل أنت متأكد؟', icon: 'warning', showCancelButton: true, confirmButtonText: 'نعم، احذف!', cancelButtonText: 'إلغاء' });
+        if (result.isConfirmed) {
             await db.collection(ACTIVITIES_COLLECTION).doc(id).delete();
+            Swal.fire('تم الحذف!', '', 'success');
             renderTable(); loadDashboardData();
-            Swal.fire('تم الحذف', '', 'success');
         }
     }
 
@@ -644,7 +581,7 @@
         document.getElementById('beneficiaries').value = beneficiaries;
         
         const btn = document.getElementById('submit-btn');
-        btn.innerHTML = 'تحديث البيانات';
+        btn.innerHTML = '<i class="fa-solid fa-pen"></i> تحديث البيانات';
         btn.classList.add('btn-warning');
         document.getElementById('cancel-edit-btn').style.display = 'block';
     }
@@ -659,49 +596,119 @@
         document.getElementById('cancel-edit-btn').style.display = 'none';
     }
 
-    // عرض الجدول
+    // ====================================================
+    // 📊 لوحة القيادة (Dashboard) - مع العدادات
+    // ====================================================
+    async function loadDashboardData() {
+        const data = await loadDataFromFireStore();
+        allDataCache = data;
+        const totalActivities = data.length;
+        const totalBeneficiaries = data.reduce((sum, item) => sum + (parseInt(item.beneficiaries) || 0), 0);
+        
+        const activityCounts = {};
+        data.forEach(item => { activityCounts[item.activity] = (activityCounts[item.activity] || 0) + 1; });
+        let topActivity = "-";
+        let maxCount = 0;
+        for (const [key, value] of Object.entries(activityCounts)) {
+            if (value > maxCount) { maxCount = value; topActivity = key; }
+        }
+
+        // تشغيل الأنيميشن للأرقام
+        const kpiActivities = document.getElementById("kpi-activities");
+        const kpiBeneficiaries = document.getElementById("kpi-beneficiaries");
+
+        // التأكد من عدم إعادة التشغيل إذا كانت البيانات نفسها (اختياري، هنا سنقوم بالتحديث دائماً)
+        animateValue(kpiActivities, 0, totalActivities, 2000); // مدة 2 ثانية
+        animateValue(kpiBeneficiaries, 0, totalBeneficiaries, 2500); // مدة 2.5 ثانية
+
+        document.getElementById('kpi-top-activity').textContent = topActivity.split(' ')[0] + '...';
+
+        updateCharts(data);
+    }
+
+    function updateCharts(data) {
+        const beneficiariesByActivity = {};
+        data.forEach(item => {
+            const act = item.activity.substring(0, 15) + (item.activity.length>15 ? '..' : ''); 
+            beneficiariesByActivity[act] = (beneficiariesByActivity[act] || 0) + item.beneficiaries;
+        });
+
+        const timelineData = {};
+        const sortedDates = data.sort((a,b) => new Date(a.date) - new Date(b.date));
+        sortedDates.forEach(item => {
+            timelineData[item.date] = (timelineData[item.date] || 0) + item.beneficiaries;
+        });
+
+        if(chartInstance1) chartInstance1.destroy();
+        if(chartInstance2) chartInstance2.destroy();
+
+        const ctx1 = document.getElementById('chartActivities').getContext('2d');
+        chartInstance1 = new Chart(ctx1, {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(beneficiariesByActivity),
+                datasets: [{ data: Object.values(beneficiariesByActivity), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderWidth: 1 }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: {font:{family:'Tajawal'}} } } }
+        });
+
+        const ctx2 = document.getElementById('chartTrend').getContext('2d');
+        const dates = Object.keys(timelineData).slice(-10);
+        const values = Object.values(timelineData).slice(-10);
+        chartInstance2 = new Chart(ctx2, {
+            type: 'bar',
+            data: { labels: dates, datasets: [{ label: 'عدد المستفيدين', data: values, backgroundColor: '#3b82f6', borderRadius: 5 }] },
+            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
+        });
+    }
+
+    // ====================================================
+    // 📋 الجدول
+    // ====================================================
     async function renderTable() {
         const tbody = document.getElementById('data-table-body');
-        document.getElementById('table-loading').style.display = 'block';
+        const fromDate = document.getElementById('filter-from-date').value;
+        const toDate = document.getElementById('filter-to-date').value;
+
         tbody.innerHTML = '';
+        document.getElementById('table-loading').style.display = 'block';
+
+        const data = await loadDataFromFireStore(fromDate, toDate);
         
-        const data = await loadDataFromFireStore(document.getElementById('filter-from-date').value, document.getElementById('filter-to-date').value);
         document.getElementById('table-loading').style.display = 'none';
 
-        if(data.length === 0) { tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">لا توجد بيانات</td></tr>`; return; }
+        if(data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:#94a3b8;">لا توجد بيانات</td></tr>`;
+            return;
+        }
 
-        let total = 0;
+        let totalBen = 0;
         data.forEach(item => {
-            total += item.beneficiaries;
-            tbody.insertAdjacentHTML('beforeend', `
+            totalBen += item.beneficiaries;
+            const row = `
                 <tr>
                     <td>${item.date}</td>
-                    <td>${item.activity}</td>
-                    <td>${item.beneficiaries.toLocaleString('ar-EG')}</td>
+                    <td style="font-weight:600; color:var(--primary-dark)">${item.activity}</td>
+                    <td><span style="background:#dcfce7; color:#166534; padding:4px 8px; border-radius:6px; font-weight:bold;">${item.beneficiaries.toLocaleString('ar-EG')}</span></td>
                     <td>
                         <button class="btn btn-edit" onclick="editItem('${item.id}', '${item.date}', '${item.activity}', ${item.beneficiaries})"><i class="fa-solid fa-pen"></i></button>
                         <button class="btn btn-danger" onclick="deleteItem('${item.id}')"><i class="fa-solid fa-trash"></i></button>
                     </td>
-                </tr>
-            `);
+                </tr>`;
+            tbody.insertAdjacentHTML('beforeend', row);
         });
-        tbody.insertAdjacentHTML('beforeend', `<tr style="background:#eff6ff; font-weight:bold;"><td colspan="2">الإجمالي</td><td colspan="2">${total.toLocaleString('ar-EG')}</td></tr>`);
+
+        tbody.insertAdjacentHTML('beforeend', `<tr style="background:#eff6ff; font-weight:bold;"><td colspan="2">الإجمالي:</td><td colspan="2">${totalBen.toLocaleString('ar-EG')}</td></tr>`);
     }
 
     // ====================================================
-    // 📄 تصدير PDF (النسخة المحسنة)
+    // 📄 تصدير PDF (استخدام Base64 للصورة)
     // ====================================================
     async function exportToPDF() {
         const fromDate = document.getElementById('filter-from-date').value;
         const toDate = document.getElementById('filter-to-date').value;
         
-        // تنبيه انتظار
-        Swal.fire({
-            title: 'جاري إنشاء التقرير...',
-            html: 'يرجى الانتظار قليلاً',
-            allowOutsideClick: false,
-            didOpen: () => Swal.showLoading()
-        });
+        Swal.fire({title: 'جاري تحضير الملف...', didOpen: () => { Swal.showLoading() }});
 
         const rawData = await loadDataFromFireStore(fromDate, toDate);
 
@@ -711,7 +718,6 @@
             return;
         }
 
-        // تجميع البيانات
         const summary = {};
         rawData.forEach(item => {
             if (!summary[item.activity]) summary[item.activity] = { count: 0, beneficiaries: 0 };
@@ -724,51 +730,49 @@
         let totalActs = 0;
         let totalBen = 0;
 
-        // ترتيب الأنشطة أبجدياً وعرضها
-        Object.keys(summary).sort().forEach(key => {
+        Object.keys(summary).forEach(key => {
             totalActs += summary[key].count;
             totalBen += summary[key].beneficiaries;
-            pdfBody.insertAdjacentHTML('beforeend', `
-                <tr>
-                    <td>${key}</td>
-                    <td>${summary[key].count.toLocaleString('ar-EG')}</td>
-                    <td>${summary[key].beneficiaries.toLocaleString('ar-EG')}</td>
-                </tr>
-            `);
+            const row = `<tr>
+                <td style="text-align:right">${key}</td>
+                <td>${summary[key].count.toLocaleString('ar-EG')}</td>
+                <td>${summary[key].beneficiaries.toLocaleString('ar-EG')}</td>
+            </tr>`;
+            pdfBody.insertAdjacentHTML('beforeend', row);
         });
 
         document.getElementById('pdf-total-activities').innerText = totalActs.toLocaleString('ar-EG');
         document.getElementById('pdf-total-beneficiaries').innerText = totalBen.toLocaleString('ar-EG');
         
-        const todayStr = new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'numeric', day: 'numeric' });
         if (fromDate && toDate) {
-            document.getElementById('pdf-date-range').innerText = `تقرير عن الفترة من: ${fromDate} إلى: ${toDate}`;
+            document.getElementById('pdf-date-range').innerText = `من تاريخ: ${fromDate} إلى تاريخ: ${toDate}`;
         } else {
-            document.getElementById('pdf-date-range').innerText = `تقرير شامل حتى تاريخ: ${todayStr}`;
+            document.getElementById('pdf-date-range').innerText = `تقرير شامل حتى تاريخ اليوم`;
         }
-        document.getElementById('pdf-print-date').innerText = todayStr;
+        document.getElementById('pdf-print-date').innerText = new Date().toLocaleDateString('ar-EG');
+
+        // التأكد من وجود الصورة قبل الطباعة
+        if(!document.getElementById('pdf-logo-img').src.includes('base64')) {
+             console.warn("لم يتم وضع كود Base64 للصورة!");
+        }
 
         const element = document.getElementById('pdf-template');
-        
-        // إعدادات التصدير
+        element.style.display = 'block'; 
+
         const opt = {
-            margin:       [10, 10, 10, 10], 
-            filename:     `Preventive_Report_${new Date().toISOString().slice(0,10)}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+            margin:       [5, 10, 10, 10], // هوامش أصغر لاستيعاب الصورة
+            filename:     `Preventive_Report_${new Date().toISOString().split('T')[0]}.pdf`,
+            image:        { type: 'jpeg', quality: 1.0 }, // جودة عالية للصورة
+            html2canvas:  { scale: 2, useCORS: true },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
 
-        try {
-            await html2pdf().set(opt).from(element).save();
+        html2pdf().set(opt).from(element).save().then(() => {
+            element.style.display = 'none'; 
             Swal.close();
-            const Toast = Swal.mixin({toast: true, position: 'top-end', showConfirmButton: false, timer: 3000});
-            Toast.fire({ icon: 'success', title: 'تم تحميل التقرير' });
-        } catch (err) {
-            console.error(err);
-            Swal.fire('خطأ', 'حدث خطأ أثناء إنشاء PDF', 'error');
-        }
+        });
     }
+
 </script>
 </body>
-</html>
+    </html>
