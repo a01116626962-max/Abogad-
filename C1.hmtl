@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>رسالة يوم الشغل</title>
+<style>
+body{
+    font-family: Arial;
+    background:#f4f6f8;
+    padding:20px;
+}
+.container{
+    max-width:500px;
+    margin:auto;
+    background:#fff;
+    padding:20px;
+    border-radius:8px;
+}
+select, button, textarea, input{
+    width:100%;
+    margin-top:10px;
+    padding:10px;
+}
+button{
+    background:#007bff;
+    color:#fff;
+    border:none;
+    cursor:pointer;
+}
+.whatsapp{
+    background:#075E54;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+<h3>📌 رسالة يوم الشغل</h3>
+
+<label>اختر اليوم</label>
+<select id="day">
+    <option>السبت</option>
+    <option>الأحد</option>
+    <option>الإثنين</option>
+    <option>الثلاثاء</option>
+    <option>الأربعاء</option>
+    <option>الخميس</option>
+</select>
+
+<label>التاريخ</label>
+<input type="date" id="date">
+
+<label>أسماء الحضور (كل اسم في سطر)</label>
+<textarea id="names" rows="5"></textarea>
+
+<textarea id="message" rows="10" placeholder="الرسالة هتظهر هنا"></textarea>
+
+<button onclick="generateMessage()">تجهيز الرسالة</button>
+<button onclick="copyMsg()">📋 نسخ الرسالة</button>
+<button class="whatsapp" onclick="sendWhats()">📲 إرسال واتساب</button>
+</div>
+
+<script>
+function generateMessage(){
+    const day = document.getElementById("day").value;
+    const date = document.getElementById("date").value;
+    const names = document.getElementById("names").value.trim();
+    const list = names ? names.split("\n").map((n,i)=>`${i+1}. ${n}`).join("\n") : "لا يوجد حضور مؤكد لهذا اليوم.";
+    const count = names ? names.split("\n").length : 0;
+
+    const msg = `📌 قائمة الحضور اليومية
+🗓️ اليوم : ${day} - ${date}
+🕒 معاد الشغل: ٣ العصر
+👥 إجمالي المتطوعين : ${count}
+
+---
+قائمة المتطوعين الحاضرين اليوم:
+${list}`;
+
+    document.getElementById("message").value = msg;
+}
+
+function copyMsg(){
+    navigator.clipboard.writeText(document.getElementById("message").value);
+    alert("✅ تم نسخ الرسالة");
+}
+
+function sendWhats(){
+    const msg = encodeURIComponent(document.getElementById("message").value);
+    window.open(`https://wa.me/?text=${msg}`,"_blank");
+}
+</script>
+
+</body>
+</html>
