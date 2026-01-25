@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>رسالة حضور اليوم</title>
+
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+
+<style>
+body{
+    font-family: Arial;
+    background:#f4f6f8;
+    padding:20px;
+}
+.container{
+    max-width:600px;
+    margin:auto;
+    background:#fff;
+    padding:20px;
+    border-radius:8px;
+}
+select, button{
+    width:100%;
+    margin-top:10px;
+    padding:12px;
+}
+button{
+    background:#075E54;
+    color:#fff;
+    border:none;
+    font-size:16px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h3>📌 رسالة الحضور اليومية</h3>
+
+<label>اختر اليوم</label>
+<select id="daySelect">
+    <option value="السبت">السبت</option>
+    <option value="الأحد">الأحد</option>
+    <option value="الإثنين">الإثنين</option>
+    <option value="الثلاثاء">الثلاثاء</option>
+    <option value="الأربعاء">الأربعاء</option>
+    <option value="الخميس">الخميس</option>
+</select>
+
+<button onclick="prepareMessage()">📲 تجهيز رسالة واتساب</button>
+</div>
+
+<script>
+// 🔥 Firebase
+firebase.initializeApp({
+    apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+    authDomain: "rdtt-15cbe.firebaseapp.com",
+    projectId: "rdtt-15cbe"
+});
+const db = firebase.firestore();
+
+const JS_DAY_MAP = {
+    0:"الأحد",1:"الإثنين",2:"الثلاثاء",
+    3:"الأربعاء",4:"الخميس",6:"السبت"
+};
+
+function formatDateKey(date){
+    return date.toISOString().split("T")[0];
+}
+
+async function prepareMessage(){
+    const selectedDay = document.getElementById("daySelect").value;
+
+    const today = new Date();
+    while(JS_DAY_MAP[today.getDay()] !== selectedDay){
+        today.setDate(today.getDate()+1);
+    }
+
+    const dateKey = formatDateKey(today);
+    const arabicDate = today.toLocaleDateString('ar-EG',{
+        year:'numeric',month:'long',day:'numeric'
+    });
+
+    const snapshot = await db.collection("user_attendance").get();
+
+    const attendance = [];
+
+    snapshot.forEach(doc=>{
+        const d = doc.data();
+        if(d.dateKey === dateKey && d.status === "حضور"){
+            attendance.push(d.volunteerName);
+        }
+    });
+
+    const list = attendance.length
+        ? attendance.map((n,i)=>`${i+1}. ${n}`).join("\n")
+        : "لا يوجد حضور مؤكد لهذا اليوم.";
+
+    const message = `
+📌 قائمة الحضور اليومية
+🗓️ اليوم : ${selectedDay} - ${arabicDate}
+🕒 معاد الشغل: ٣ العصر
+👥 إجمالي المتطوعين : ${attendance.length}
+
+---
+قائمة المتطوعين الحاضرين اليوم:
+${list}
+`.trim();
+
+    window.open(`https://wa.me/?text=${encodeURIComponent(message)}`,'_blank');
+}
+</script>
+
+</body>
+</html>
