@@ -1,89 +1,204 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>قائمة الحضور اليومية</title>
-<style>
-body { font-family: Arial, sans-serif; background:#f4f4f9; color:#333; padding:20px; }
-.container { max-width:600px; margin:auto; background:#fff; padding:20px; border-radius:8px; box-shadow:0 4px 6px rgba(0,0,0,0.1); }
-h1 { color:#007bff; text-align:center; }
-button { padding:10px 15px; margin:5px 0; border:none; border-radius:5px; cursor:pointer; background:#007bff; color:#fff; }
-button:hover { opacity:0.9; }
-#message-area { margin-top:20px; padding:15px; border:1px solid #ddd; border-radius:5px; background:#f9f9f9; white-space:pre-line; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة إشراف المتطوعين</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f1f5f9;
+            --primary: #38bdf8;
+            --accent: #818cf8;
+            --success: #22c55e;
+            --error: #ef4444;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .header h1 { margin: 0; font-size: 1.8rem; color: #fff; }
+        .header p { margin: 5px 0 0; opacity: 0.9; font-size: 0.9rem; }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+
+        .stat-card span { display: block; font-size: 0.8rem; color: #94a3b8; }
+        .stat-card b { font-size: 1.5rem; color: var(--primary); }
+
+        .table-container {
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+        }
+
+        th {
+            background: #334155;
+            padding: 15px;
+            font-size: 0.9rem;
+            color: var(--primary);
+        }
+
+        td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge-hodoor { background: #22c55e22; color: #22c55e; border: 1px solid #22c55e; }
+        .badge-ezar { background: #ef444422; color: #ef4444; border: 1px solid #ef4444; }
+
+        .time-cell { font-family: monospace; color: #94a3b8; font-size: 0.8rem; }
+
+        /* أنيميشن عند دخول صف جديد */
+        .new-row {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); background: var(--primary); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            th:nth-child(4), td:nth-child(4) { display: none; } /* إخفاء السبب في الموبايل لتوفير مساحة */
+        }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
 <body>
+
 <div class="container">
-<h1>📌 الحضور اليومي</h1>
+    <div class="header">
+        <h1>لوحة تحكم المشرف</h1>
+        <p>مراقبة حية لآخر 10 عمليات تسجيل</p>
+    </div>
 
-<label for="day-select">اختر اليوم:</label>
-<select id="day-select">
-<option value="">-- اختر يوم --</option>
-<option value="2026-01-26">الإثنين - 26 يناير 2026</option>
-<option value="2026-01-27">الثلاثاء - 27 يناير 2026</option>
-<option value="2026-01-28">الأربعاء - 28 يناير 2026</option>
-<!-- ضيف أيام إضافية حسب الحاجة -->
-</select>
+    <div class="stats-bar">
+        <div class="stat-card">
+            <span>إجمالي عمليات الرصد (الآن)</span>
+            <b id="total-count">0</b>
+        </div>
+        <div class="stat-card">
+            <span>آخر تحديث</span>
+            <b id="last-update" style="font-size: 1rem;">--:--</b>
+        </div>
+    </div>
 
-<button onclick="generateMessage()">إظهار رسالة الواتساب</button>
-
-<div id="message-area">اختر يوم واضغط الزر لتظهر الرسالة.</div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>المتطوع</th>
+                    <th>الحالة</th>
+                    <th>التاريخ المسجل</th>
+                    <th>السبب / وقت الإرسال</th>
+                </tr>
+            </thead>
+            <tbody id="data-list">
+                </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-// ⚙️ بيانات الحضور (تقدر تعدلها حسب الحاجة)
-const WORKING_DAYS = ["السبت","الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس"];
-const FIXED_VOLUNTEERS = {
-  "أحمد":["السبت","الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس"],
-  "هدير":["السبت","الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس"],
-  "محمد":["السبت","الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس"],
-  "سامى":["السبت","الأحد","الثلاثاء"]
-};
-const VOLUNTEER_NAMES_ORDERED = Object.keys(FIXED_VOLUNTEERS);
+    // إعدادات Firebase الخاصة بك
+    const firebaseConfig = {
+        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
+        authDomain: "rdtt-15cbe.firebaseapp.com",
+        projectId: "rdtt-15cbe",
+        storageBucket: "rdtt-15cbe.firebasestorage.app",
+        messagingSenderId: "219502671343",
+        appId: "1:219502671343:web:b289b11869e25c9a30321a"
+    };
 
-// ⚙️ بيانات تسجيل الحضور (مثال)
-const ATTENDANCE_DATA = {
-  "2026-01-26": { "أحمد":"حضور", "هدير":"حضور", "محمد":"اعتذار", "سامى":"حضور" },
-  "2026-01-27": { "أحمد":"حضور", "هدير":"اعتذار", "محمد":"حضور", "سامى":"حضور" }
-};
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-function generateMessage() {
-  const dayKey = document.getElementById('day-select').value;
-  if(!dayKey) return alert("اختر يوم أولا");
+    // الاستماع للبيانات (Real-time)
+    db.collection("user_attendance")
+      .orderBy("timestamp", "desc")
+      .limit(10)
+      .onSnapshot((snapshot) => {
+          const list = document.getElementById('data-list');
+          list.innerHTML = "";
+          
+          let count = 0;
+          snapshot.forEach((doc) => {
+              count++;
+              const data = doc.data();
+              const tr = document.createElement('tr');
+              tr.className = "new-row";
 
-  // تحديد اسم اليوم بالعربي
-  const dayName = new Date(dayKey).toLocaleDateString('ar-EG', { weekday:'long' });
+              const badgeClass = data.status === "حضور" ? "badge-hodoor" : "badge-ezar";
+              
+              tr.innerHTML = `
+                  <td><b>${data.volunteerName}</b></td>
+                  <td><span class="badge ${badgeClass}">${data.status}</span></td>
+                  <td class="time-cell">${data.dateKey}</td>
+                  <td>
+                    <div style="font-size:0.85rem">${data.reason || '-'}</div>
+                    <div style="font-size:0.7rem; color:#64748b">${data.registrationTime || ''}</div>
+                  </td>
+              `;
+              list.appendChild(tr);
+          });
 
-  // بناء قائمة الحضور
-  const attendance = [];
-  VOLUNTEER_NAMES_ORDERED.forEach(name=>{
-    const scheduled = FIXED_VOLUNTEERS[name].includes(dayName);
-    const status = ATTENDANCE_DATA[dayKey] ? ATTENDANCE_DATA[dayKey][name] : null;
-
-    if((scheduled && status !== "اعتذار") || status==="حضور") {
-      attendance.push(name);
-    }
-  });
-
-  // تكوين الرسالة
-  let message = `
-📌 قائمة الحضور اليومية
-🗓️ اليوم : ${dayName} - ${dayKey}
-🕒 معاد الشغل: ٣ العصر
-👥 إجمالي المتطوعين : ${attendance.length}
-
----
-قائمة المتطوعين الحاضرين اليوم:
-${attendance.length ? attendance.join('\n') : 'لا يوجد حضور مؤكد لهذا اليوم.'}
-`;
-
-  document.getElementById('message-area').textContent = message;
-
-  // رابط فتح واتساب
-  const encoded = encodeURIComponent(message.trim());
-  window.open(`https://wa.me/?text=${encoded}`, '_blank');
-}
+          document.getElementById('total-count').textContent = count;
+          document.getElementById('last-update').textContent = new Date().toLocaleTimeString('ar-EG');
+      });
 </script>
+
 </body>
 </html>
