@@ -5,19 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>تسجيل حضور المتطوعين</title>
     <style>
+        /* المتغيرات الأساسية للألوان */
+        :root {
+            --bg-color: #f4f4f9;
+            --container-bg: #ffffff;
+            --text-color: #333;
+            --input-border: #ccc;
+        }
+
+        /* أنماط الوضع الليلي */
+        body.dark-mode {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --input-border: #444;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
-            background-color: #f4f4f9;
-            color: #333;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
             padding: 20px;
             text-align: right;
             direction: rtl;
+            transition: 0.3s;
         }
         .container {
             max-width: 600px;
             margin: 0 auto;
-            background: #fff;
+            background: var(--container-bg);
             padding: 25px;
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -37,15 +54,52 @@
             width: 100%;
             padding: 10px;
             margin-bottom: 20px;
-            border: 1px solid #ccc;
+            border: 1px solid var(--input-border);
             border-radius: 4px;
             box-sizing: border-box;
             font-size: 1em;
-            direction: rtl;
-            text-align: right;
+            background: var(--container-bg);
+            color: var(--text-color);
         }
+
+        /* تنسيق حقل كلمة المرور مع الزر */
+        .pass-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .pass-wrapper input {
+            padding-left: 45px; /* مساحة للزر */
+        }
+        .toggle-pass {
+            position: absolute;
+            left: 10px;
+            top: 10px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            font-size: 0.9em;
+            color: #007bff;
+            width: auto;
+            padding: 0;
+        }
+
+        /* زر الوضع الليلي */
+        .theme-toggle {
+            float: left;
+            background: #444;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.8em;
+            width: auto;
+            margin-bottom: 10px;
+        }
+
         #dates-checkbox-container {
-            border: 1px solid #ccc;
+            border: 1px solid var(--input-border);
             padding: 10px;
             border-radius: 4px;
             margin-bottom: 20px;
@@ -64,7 +118,7 @@
             width: auto;
             margin-bottom: 0;
         }
-        button {
+        button[type="submit"] {
             padding: 12px 20px;
             color: white;
             border: none;
@@ -75,9 +129,8 @@
             font-size: 1.1em;
             width: 100%;
         }
-        button:hover {
-            background-color: #218838;
-        }
+        button:hover { background-color: #218838; }
+
         #response-message {
             margin-top: 20px;
             padding: 15px;
@@ -87,6 +140,7 @@
         }
         .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
         #whatsapp-link-container {
             margin-top: 20px;
             padding: 15px;
@@ -110,6 +164,7 @@
             padding: 15px;
             border: 1px solid #ffc107;
             background-color: #fff3cd;
+            color: #333;
             border-radius: 4px;
             margin-bottom: 20px;
             display: none;
@@ -121,6 +176,7 @@
 <body>
 
 <div class="container">
+    <button class="theme-toggle" onclick="toggleTheme()">الوضع الليلي 🌙</button>
     <h1>📝 تسجيل حضور المتطوعين</h1>
 
     <form id="attendance-form">
@@ -129,8 +185,11 @@
             <option value="">اختر اسمك</option>
         </select>
 
-        <label for="volunteer-pass">كلمة المرور (3 أرقام):</label>
-        <input type="password" id="volunteer-pass" maxlength="3" inputmode="numeric" placeholder="أدخل كود المرور الخاص بك" required>
+        <label for="volunteer-pass">كلمة المرور:</label>
+        <div class="pass-wrapper">
+            <input type="password" id="volunteer-pass" maxlength="3" inputmode="numeric" placeholder="أدخل كود المرور" required>
+            <button type="button" class="toggle-pass" onclick="togglePass()">إظهار</button>
+        </div>
 
         <label for="registration-type">نوع التسجيل:</label>
         <select id="registration-type" onchange="toggleApologyFields()" required>
@@ -183,6 +242,22 @@
     const JS_DAY_MAP = { 0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت" };
     const MONTH_MAP = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
     
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+    }
+
+    function togglePass() {
+        const passInput = document.getElementById('volunteer-pass');
+        const toggleBtn = document.querySelector('.toggle-pass');
+        if (passInput.type === "password") {
+            passInput.type = "text";
+            toggleBtn.textContent = "إخفاء";
+        } else {
+            passInput.type = "password";
+            toggleBtn.textContent = "إظهار";
+        }
+    }
+
     function formatDateKey(date) {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -195,8 +270,7 @@
         const dateContainer = document.getElementById('dates-checkbox-container');
         Object.keys(FIXED_VOLUNTEERS).sort().forEach(name => {
             const option = document.createElement('option');
-            option.value = name;
-            option.textContent = name;
+            option.value = name; option.textContent = name;
             nameSelect.appendChild(option);
         });
         const today = new Date();
@@ -251,20 +325,17 @@
             const late = document.getElementById('late-reason').value;
             const todayKey = formatDateKey(new Date());
             const isTodaySelected = !!document.querySelector(`input[value="${todayKey}"]:checked`);
-
             if (!reason) { alert('يرجى إدخال سبب الاعتذار.'); return; }
-
-            if (isTodaySelected) {
-                if (!validateLateReason(late)) {
-                    alert('يرجى كتابة سبب تاخير حقيقى');
-                    return;
-                }
+            if (isTodaySelected && !validateLateReason(late)) {
+                alert('يرجى كتابة سبب تاخير حقيقى');
+                return;
             }
             fullReason = reason + (late ? ` (تأخر: ${late})` : "");
         }
 
         const selectedDatesData = [];
         try {
+            const now = new Date();
             for (const element of selectedDatesElements) {
                 const dateKey = element.value;
                 const dateDisplay = element.getAttribute('data-date-display');
@@ -273,7 +344,7 @@
                     volunteerName: name, status: status, reason: fullReason,
                     registrationDateTimestamp: firebase.firestore.Timestamp.fromDate(new Date(dateKey)), 
                     dateKey: dateKey, 
-                    registrationTime: dateDisplay + ' – ' + new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+                    registrationTime: dateDisplay + ' – ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
                     timestamp: firebase.firestore.FieldValue.serverTimestamp() 
                 };
                 await db.collection("user_attendance").doc(docId).set(dataToSave, { merge: true });
@@ -289,12 +360,15 @@
     });
 
     function createWhatsAppLink(name, status, datesArray, reason) {
-        const time = new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        const now = new Date();
+        const fullTimeStr = now.toLocaleDateString('ar-EG') + " الساعة " + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
         let datesList = datesArray.map(d => `• ${d.display}`).join('\n');
-        let messageBody = `👤 المتطوع: ${name}\n📝 الحالة: *${status}*\n\n🗓️ الأيام:\n${datesList}\n\n🕒 الوقت: ${time}${reason ? `\n\nسبب الاعتذار: ${reason}` : ""}`;
+        
+        let messageBody = `👤 المتطوع: ${name}\n📝 الحالة: *${status}*\n\n🗓️ الأيام المسجلة:\n${datesList}\n\n🕒 وقت وتاريخ الإرسال:\n${fullTimeStr}${reason ? `\n\nسبب الاعتذار: ${reason}` : ""}`;
+        
         const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(messageBody.trim())}`;
         const container = document.getElementById('whatsapp-link-container');
-        container.innerHTML = `<p>اضغط لإرسال البيانات واتساب:</p><a href="${whatsappUrl}" target="_blank">إرسال 📲</a>`;
+        container.innerHTML = `<p>اضغط للإرسال عبر واتساب:</p><a href="${whatsappUrl}" target="_blank">إرسال البيانات 📲</a>`;
         container.style.display = 'block';
     }
 
