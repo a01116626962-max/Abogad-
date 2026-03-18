@@ -3,250 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة بيانات الأنشطة الوقائية</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <title>لوحة المشرف - تسجيل حضور المتطوعين</title>
     <style>
-        /* ------------------ تصميم عام وخطوط ------------------ */
         :root {
-            --primary-color: #1976D2;
-            --secondary-color: #00BCD4; 
-            --accent-color: #FFC107;
-            --success-color: #388E3C;
+            --bg-color: #f4f4f9;
+            --container-bg: #ffffff;
             --text-color: #333;
-            --bg-color: #f4f7f6;
+            --input-border: #ccc;
+            --today-bg: #e3f2fd;
         }
+
+        body.dark-mode {
+            --bg-color: #121212;
+            --container-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --input-border: #444;
+            --today-bg: #0d47a1;
+        }
+
         body {
-            font-family: 'Cairo', sans-serif;
+            font-family: 'Arial', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
-            padding: 15px;
+            padding: 20px;
+            text-align: right;
             direction: rtl;
+            transition: 0.3s;
         }
         .container {
-            width: 100%;
-            max-width: 1000px;
-            margin: auto;
-            background: #fff;
+            max-width: 600px;
+            margin: 0 auto;
+            background: var(--container-bg);
             padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            border-top: 5px solid #dc3545; 
         }
         h1 {
-            text-align: center;
-            color: var(--primary-color);
-            font-weight: 700;
-            margin-bottom: 25px;
-        }
-        h2 {
-            font-size: 1.2em;
-            color: var(--primary-color);
+            color: #dc3545;
             border-bottom: 2px solid #eee;
             padding-bottom: 10px;
-            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        label { display: block; margin-bottom: 8px; font-weight: bold; }
+        select, input[type="text"] {
+            width: 100%; padding: 10px; margin-bottom: 20px;
+            border: 1px solid var(--input-border); border-radius: 4px;
+            box-sizing: border-box; font-size: 1em;
+            background: var(--container-bg); color: var(--text-color);
         }
 
-        /* ------------------ أزرار التبديل ------------------ */
-        .toggle-button {
-            padding: 12px 25px;
-            background-color: var(--secondary-color);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 20px;
-            font-size: 1.1em;
-            font-weight: bold;
-            display: block;
-            width: 100%;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.3s;
+        .theme-toggle {
+            float: left; background: #444; color: #fff; border: none;
+            padding: 5px 10px; border-radius: 20px; cursor: pointer;
+            font-size: 0.8em; margin-bottom: 10px;
         }
-        .toggle-button:hover {
-            background-color: #00AABF;
-        }
-        
-        /* ------------------ نماذج الإدخال (التسجيل اليومي) ------------------ */
-        .card {
-            background-color: #fcfcfc;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #eee;
-            margin-bottom: 20px;
-        }
-        #data-form {
-            display: grid;
-            gap: 15px;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-        input:not([type="checkbox"]), select, button {
-            width: 100%;
+
+        #dates-checkbox-container {
+            border: 1px solid var(--input-border);
             padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 1em;
-            text-align: right;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            max-height: 250px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
         }
-        #add-button {
-            grid-column: 1 / -1;
-            background-color: var(--success-color);
-            color: white;
+        .date-checkbox-item {
+            display: flex; align-items: center; margin-bottom: 5px; cursor: pointer; padding: 5px; border-radius: 4px;
+        }
+        .date-checkbox-item.today {
+            background-color: var(--today-bg);
+            border: 1px solid #007bff;
             font-weight: bold;
         }
-
-        /* إخفاء حقل عدد الأنشطة */
-        .count-group {
-            display: none;
+        .date-checkbox-item input[type="checkbox"] {
+            margin-left: 10px; margin-right: 0; width: auto; margin-bottom: 0;
         }
         
-        /* ------------------ قسم التقارير (مخفي افتراضيًا) ------------------ */
-        #reports-section {
-            display: none; 
-        }
-        .export-controls {
+        /* تنسيق خيار الإجازة الرسمية */
+        .holiday-toggle-container {
             display: flex;
-            gap: 15px;
             align-items: center;
-            flex-wrap: wrap;
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            color: #856404;
         }
-        .date-inputs {
-            display: flex;
-            flex-grow: 1;
+        .holiday-toggle-container input[type="checkbox"] {
+            width: auto; margin: 0 0 0 10px; transform: scale(1.2); cursor: pointer;
         }
-        #filter-button, #copy-button {
-            padding: 10px 20px;
-            font-weight: 600;
-        }
-        #copy-button {
-            background-color: var(--accent-color);
-            color: var(--text-color);
-        }
+        .holiday-toggle-container label { margin: 0; cursor: pointer; font-weight: bold; }
 
-        /* ------------------ تصميم الجدول ------------------ */
-        .table-responsive {
-            overflow-x: auto;
+        button[type="submit"] {
+            padding: 12px 20px; color: white; border: none; border-radius: 4px;
+            cursor: pointer; background-color: #dc3545; transition: 0.3s;
+            font-size: 1.1em; width: 100%; font-weight: bold;
         }
-        table {
-            width: 100%;
-            min-width: 600px;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin-top: 15px;
-        }
-        th {
-            background-color: var(--primary-color);
-            color: white;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-        }
-        th, td {
-            border: 1px solid #eee;
-            padding: 12px;
-            text-align: right;
-        }
-        .total-row {
-            font-weight: bold;
-            background-color: #e0f7fa !important;
-            color: var(--primary-color);
-        }
-        
-        /* ------------------ استجابة الجوال ------------------ */
-        @media (max-width: 768px) {
-            #data-form {
-                grid-template-columns: 1fr;
-            }
-            .export-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
+        button[type="submit"]:hover { background-color: #c82333; }
+
+        #response-message { margin-top: 20px; padding: 15px; border-radius: 4px; display: none; font-weight: bold; }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+        #whatsapp-link-container { margin-top: 20px; text-align: center; display: none; }
+        #whatsapp-link-container a {
+            color: white; text-decoration: none; font-weight: bold; display: block;
+            padding: 10px; background-color: #25D366; border-radius: 4px;
         }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
 <body>
 
 <div class="container">
-    <h1>لوحة تحكم: إحصائيات الأنشطة الوقائية</h1>
-    
-    <button class="toggle-button" onclick="toggleSections()">عرض تقارير وفلاتر الأنشطة 📊</button>
+    <button class="theme-toggle" onclick="toggleTheme()">الوضع الليلي 🌙</button>
+    <h1>👑 لوحة تحكم المشرف</h1>
 
-    <div id="entry-section" class="card">
-        <h2>تسجيل نشاط اليوم</h2>
-        <form id="data-form">
-            <div class="form-group"><label for="activity-date">التاريخ:</label><input type="date" id="activity-date" required></div>
-            
-            <div class="form-group">
-                <label for="activity">اسم النشاط:</label>
-                <select id="activity" required>
-                    <option value="" disabled selected>--- اختر النشاط ---</option>
-                    <option value="1- حملات طرق الأبواب">1- حملات طرق الأبواب</option>
-                    <option value="2- لقاءات أسرية">2- لقاءات أسرية</option>
-                    <option value="3- لقاءات دينية - كنائس - مساجد">3- لقاءات دينية - كنائس - مساجد</option>
-                    <option value="4- ميدانية (ميادين عامة - مواقف - المناطق المحيطه - المحال التجارية - الورش الصناعية)">4- ميدانية (ميادين عامة - مواقف - المناطق المحيطه - المحال التجارية - الورش الصناعية)</option>
-                    <option value="5- مهرجانات والأنشطة الرياضية والفنية">5- مهرجانات والأنشطة الرياضية والفنية</option>
-                    <option value="6- ورش عمل للأطفال">6- ورش عمل للأطفال</option>
-                    <option value="7- تدريبات القيادات الطبيعية والشبابية">7- تدريبات القيادات الطبيعية والشبابية</option>
-                    <option value="8- المجمعات الخدمية (المدارس - مراكز الشباب - الجمعيات الأهلية)">8- المجمعات الخدمية (المدارس - مراكز الشباب - الجمعيات الأهلية)</option>
-                    <option value="أخرى">أخرى</option>
-                </select>
-            </div>
-            
-            <div class="form-group count-group"><label for="count">عدد الأنشطة:</label><input type="number" id="count" value="1" readonly></div>
-            
-            <div class="form-group"><label for="beneficiaries">إجمالي المستفيدين:</label><input type="number" id="beneficiaries" placeholder="0" min="0" required></div>
-            
-            <button type="submit" id="add-button">✅ تسجيل النشاط</button>
-        </form>
-    </div>
+    <form id="admin-form">
+        <label for="volunteer-name">تحديد المتطوع:</label>
+        <select id="volunteer-name" required>
+            <option value="">اختر اسم المتطوع أو "الكل"</option>
+            <option value="all" style="font-weight: bold; color: #dc3545;">الكل (إجراء جماعي) 👥</option>
+            </select>
 
-    <div id="reports-section">
-        <h2>فلترة واستخراج التقارير</h2>
-        <div class="card export-controls">
-            <label style="font-weight: bold;">تحديد فترة العرض:</label>
-            <div class="date-inputs">
-                <input type="date" id="filter-from-date" placeholder="من تاريخ">
-                <input type="date" id="filter-to-date" placeholder="إلى تاريخ">
-            </div>
-            <button onclick="renderTable()" id="filter-button">تطبيق الفلتر</button>
-            <button onclick="copySelected()" id="copy-button">نسخ تقرير الأنشطة المحددة</button>
+        <label for="registration-type">نوع التسجيل:</label>
+        <select id="registration-type" required>
+            <option value="حضور">حضور</option>
+            <option value="اعتذار">اعتذار / إجازة</option>
+        </select>
+
+        <div class="holiday-toggle-container">
+            <input type="checkbox" id="is-holiday" onchange="updateReasonToggle()">
+            <label for="is-holiday">تعيين كـ "إجازة رسمية" 🌴</label>
         </div>
+
+        <label for="admin-reason">السبب (يُسجل تلقائياً):</label>
+        <input type="text" id="admin-reason" value="إداري" readonly style="background-color: #e9ecef; cursor: not-allowed;">
+
+        <label>الشهر الحالي (من 26 إلى 25):</label>
+        <div id="dates-checkbox-container"></div>
         
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 50px;">تحديد</th>
-                        <th style="width: 120px;">التاريخ</th>
-                        <th>النشاط الوقائي المنفذ</th>
-                        <th style="width: 120px;">إجمالي المستفيد</th>
-                    </tr>
-                </thead>
-                <tbody id="data-table-body">
-                    </tbody>
-            </table>
-        </div>
-    </div>
+        <button type="submit">تسجيل البيانات</button>
+    </form>
+
+    <div id="response-message"></div>
+    <div id="whatsapp-link-container"></div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-
 <script>
-    const form = document.getElementById('data-form');
-    const tableBody = document.getElementById('data-table-body');
-    const entrySection = document.getElementById('entry-section');
-    const reportsSection = document.getElementById('reports-section');
-    const toggleBtn = document.querySelector('.toggle-button');
-    
-    // ====================================================
-    // 🔑 Firebase Configuration (منسوخة من كود المتطوعين)
-    // ====================================================
+    // --- إعدادات Firebase ---
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -255,222 +164,173 @@
         messagingSenderId: "219502671343",
         appId: "1:219502671343:web:b289b11869e25c9a30321a"
     };
-
-    // تهيئة Firebase و Firestore
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.firestore();
-    
-    // 🗄️ اسم مجموعة مستندات جديد لضمان الفصل التام عن بيانات الحضور user_attendance
-    const ACTIVITIES_COLLECTION = 'dashboard_preventive_logs'; 
-    // يمكنك تغيير 'dashboard_preventive_logs' لأي اسم آخر تريده، المهم أن يكون فريداً.
 
-    // ----------------------------------------------------
-    // وظائف التحكم بالواجهة (التبديل بين قسم الإدخال والتقارير)
-    // ----------------------------------------------------
-    function toggleSections() {
-        const isEntryVisible = entrySection.style.display !== 'none';
+    const whatsappNumber = "201223314173"; 
+
+    // القائمة الجديدة المحدثة
+    const FIXED_VOLUNTEERS = [
+        "شيماء", "حبيبة", "رحاب", "أحمد", "محمد إبراهيم", 
+        "ساندي", "معاذ", "سامى", "مازن", "معتز", "شمس"
+    ];
+
+    const JS_DAY_MAP = { 0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت" };
+    const MONTH_MAP = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+    
+    function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+
+    function updateReasonToggle() {
+        const isHoliday = document.getElementById('is-holiday').checked;
+        const reasonInput = document.getElementById('admin-reason');
+        const regType = document.getElementById('registration-type');
         
-        if (isEntryVisible) {
-            entrySection.style.display = 'none';
-            reportsSection.style.display = 'block';
-            toggleBtn.textContent = '🏠 العودة لتسجيل النشاط اليومي';
-            renderTable(); // عرض الجدول عند التبديل
+        if (isHoliday) {
+            reasonInput.value = "إجازة رسمية";
+            regType.value = "اعتذار"; // تحويل الحالة تلقائياً لاعتذار/إجازة
         } else {
-            entrySection.style.display = 'block';
-            reportsSection.style.display = 'none';
-            toggleBtn.textContent = 'عرض تقارير وفلاتر الأنشطة 📊';
-        }
-    }
-    
-    // ----------------------------------------------------
-    // وظائف Firebase لتحميل وتخزين البيانات
-    // ----------------------------------------------------
-    
-    window.onload = function() {
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('activity-date').value = today;
-        entrySection.style.display = 'block';
-        reportsSection.style.display = 'none';
-    };
-
-    /**
-     * تحميل البيانات من Firestore مع إمكانية الفلترة
-     */
-    async function loadData(fromDateStr = null, toDateStr = null) {
-        let q = db.collection(ACTIVITIES_COLLECTION).orderBy('date', 'desc');
-
-        if (fromDateStr && toDateStr) {
-            q = q
-                .where('date', '>=', fromDateStr)
-                .where('date', '<=', toDateStr);
-        }
-        
-        try {
-            const snapshot = await q.get();
-            return snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-        } catch (error) {
-            console.error("Error loading data from Firebase:", error);
-            alert("حدث خطأ أثناء تحميل البيانات من قاعدة البيانات.");
-            return [];
+            reasonInput.value = "إداري";
         }
     }
 
-    /**
-     * عرض الجدول بناءً على البيانات المحملة
-     */
-    async function renderTable() {
-        const fromDateStr = document.getElementById('filter-from-date').value;
-        const toDateStr = document.getElementById('filter-to-date').value;
-        
-        document.getElementById('filter-button').textContent = 'جاري التحميل...';
-        document.getElementById('filter-button').disabled = true;
+    function formatDateKey(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
 
-        const filteredData = await loadData(fromDateStr, toDateStr);
-        
-        document.getElementById('filter-button').textContent = 'تطبيق الفلتر';
-        document.getElementById('filter-button').disabled = false;
-
-        tableBody.innerHTML = ''; 
-        let totalBeneficiaries = 0;
-
-        filteredData.forEach(item => {
-            const row = tableBody.insertRow();
-            
-            totalBeneficiaries += item.beneficiaries;
-
-            const checkboxCell = row.insertCell();
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            const activityData = {
-                date: item.date,
-                activity: item.activity,
-                count: 1, 
-                beneficiaries: item.beneficiaries 
-            };
-            checkbox.setAttribute('data-activity', JSON.stringify(activityData));
-            checkboxCell.appendChild(checkbox);
-
-            row.insertCell().textContent = item.date;
-            row.insertCell().textContent = item.activity;
-            row.insertCell().textContent = item.beneficiaries.toLocaleString('ar-EG');
+    function initializeForm() {
+        const nameSelect = document.getElementById('volunteer-name');
+        // تم إزالة الترتيب الأبجدي للحفاظ على الترتيب الذي طلبته أو يمكنك تركه
+        FIXED_VOLUNTEERS.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name; option.textContent = name;
+            nameSelect.appendChild(option);
         });
-        
-        if (filteredData.length > 0) {
-            const totalRow = tableBody.insertRow();
-            totalRow.className = 'total-row';
-            totalRow.insertCell().textContent = 'الإجمالي';
-            totalRow.insertCell().textContent = '';
-            totalRow.insertCell().textContent = filteredData.length.toLocaleString('ar-EG') + ' نشاط';
-            totalRow.insertCell().textContent = totalBeneficiaries.toLocaleString('ar-EG');
+
+        generateDatesCycle();
+    }
+
+    function generateDatesCycle() {
+        const dateContainer = document.getElementById('dates-checkbox-container');
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+
+        let startDate, endDate;
+        if (now.getDate() >= 26) {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 26);
+            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 25);
+        } else {
+            startDate = new Date(now.getFullYear(), now.getMonth() - 1, 26);
+            endDate = new Date(now.getFullYear(), now.getMonth(), 25);
         }
 
-        if (filteredData.length === 0 && (fromDateStr || toDateStr)) {
-            const emptyRow = tableBody.insertRow();
-            const cell = emptyRow.insertCell();
-            cell.colSpan = 4;
-            cell.style.textAlign = 'center';
-            cell.textContent = 'لا توجد بيانات مسجلة في هذه الفترة.';
+        let currentDate = new Date(startDate);
+        let todayElementId = null;
+
+        while (currentDate <= endDate) {
+            const dateKey = formatDateKey(currentDate);
+            const isToday = (currentDate.getTime() === now.getTime());
+            const display = `${JS_DAY_MAP[currentDate.getDay()]} (${currentDate.getDate()} ${MONTH_MAP[currentDate.getMonth()]}) ${isToday ? ' - 📌 اليوم' : ''}`;
+            
+            const div = document.createElement('div');
+            div.className = `date-checkbox-item ${isToday ? 'today' : ''}`;
+            if (isToday) todayElementId = `item-${dateKey}`;
+            div.id = `item-${dateKey}`;
+
+            div.innerHTML = `<input type="checkbox" id="date-${dateKey}" value="${dateKey}" data-date-display="${display}">
+                             <label for="date-${dateKey}">${display}</label>`;
+            dateContainer.appendChild(div);
+
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+
+        if (todayElementId) {
+            setTimeout(() => {
+                const todayEl = document.getElementById(todayElementId);
+                todayEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
         }
     }
 
-    form.addEventListener('submit', async function(event) {
-        event.preventDefault();
-        document.getElementById('add-button').textContent = 'جاري الحفظ...';
-        document.getElementById('add-button').disabled = true;
+    document.getElementById('admin-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const nameOrAll = document.getElementById('volunteer-name').value;
+        const status = document.getElementById('registration-type').value;
+        const reason = document.getElementById('admin-reason').value;
 
-        const date = document.getElementById('activity-date').value;
-        const activitySelect = document.getElementById('activity');
-        const activity = activitySelect.value;
-        
-        const count = 1; 
-        const beneficiaries = parseInt(document.getElementById('beneficiaries').value) || 0;
-        
-        if (!activity) {
-            alert("الرجاء اختيار اسم النشاط أولاً.");
-            document.getElementById('add-button').textContent = '✅ تسجيل النشاط';
-            document.getElementById('add-button').disabled = false;
-            return;
-        }
-        
-        if (beneficiaries < 0) {
-            alert("الرجاء إدخال عدد مستفيدين صحيح.");
-            document.getElementById('add-button').textContent = '✅ تسجيل النشاط';
-            document.getElementById('add-button').disabled = false;
+        const selectedDatesElements = document.querySelectorAll('#dates-checkbox-container input[type="checkbox"]:checked');
+        if (selectedDatesElements.length === 0) {
+            alert('يجب اختيار يوم واحد على الأقل.');
             return;
         }
 
-        const newItem = {
-            date: date,
-            activity: activity,
-            count: count, 
-            beneficiaries: beneficiaries,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        };
+        let targetVolunteers = nameOrAll === 'all' ? FIXED_VOLUNTEERS : [nameOrAll];
+        let selectedDatesData = [];
         
+        const submitBtn = document.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.textContent = "جاري التسجيل...";
+
         try {
-            await db.collection(ACTIVITIES_COLLECTION).add(newItem);
-            
-            activitySelect.value = '';
-            document.getElementById('beneficiaries').value = '';
-            alert('تم تسجيل النشاط بنجاح!');
+            const now = new Date();
+            const batch = db.batch();
 
-            document.getElementById('add-button').textContent = '✅ تسجيل النشاط';
-            document.getElementById('add-button').disabled = false;
+            for (const element of selectedDatesElements) {
+                const dateKey = element.value;
+                const dateDisplay = element.getAttribute('data-date-display');
+                selectedDatesData.push({ display: dateDisplay, key: dateKey });
 
-            if (reportsSection.style.display !== 'none') {
-                renderTable();
+                for (const volunteer of targetVolunteers) {
+                    const docId = `${volunteer}_${dateKey}`;
+                    const docRef = db.collection("user_attendance").doc(docId);
+                    
+                    const dataToSave = {
+                        volunteerName: volunteer,
+                        status: status,
+                        reason: reason, // سيسجل "إداري" أو "إجازة رسمية"
+                        registrationDateTimestamp: firebase.firestore.Timestamp.fromDate(new Date(dateKey)), 
+                        dateKey: dateKey, 
+                        registrationTime: dateDisplay + ' – ' + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                        registeredByAdmin: true
+                    };
+                    batch.set(docRef, dataToSave, { merge: true });
+                }
             }
 
+            await batch.commit();
+
+            document.getElementById('response-message').className = 'success';
+            document.getElementById('response-message').textContent = `✅ تم التسجيل بنجاح لعدد (${targetVolunteers.length}) متطوع.`;
+            document.getElementById('response-message').style.display = 'block';
+            
+            createWhatsAppLink(nameOrAll === 'all' ? 'جميع المتطوعين (إجراء جماعي)' : nameOrAll, status, selectedDatesData, reason);
+            
         } catch (error) {
-            console.error("حدث خطأ أثناء إضافة المستند لـ Firebase: ", error);
-            alert('فشل في عملية تسجيل النشاط. تحقق من إعدادات Firebase.');
-            document.getElementById('add-button').textContent = '✅ تسجيل النشاط';
-            document.getElementById('add-button').disabled = false;
+            alert("خطأ أثناء التسجيل: " + error.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "تسجيل البيانات";
         }
     });
-    
-    function copySelected() {
-        const checkboxes = document.querySelectorAll('#data-table-body input[type="checkbox"]:checked');
-        if (checkboxes.length === 0) {
-            alert("الرجاء تحديد نشاط واحد على الأقل لنسخه.");
-            return;
-        }
 
-        let outputText = "تقرير الأنشطة الوقائية:\n\n";
-        outputText += "التاريخ\tالنشاط\tعدد الأنشطة\tإجمالي المستفيد\n";
-        outputText += "--------------------------------------------------------\n";
+    function createWhatsAppLink(name, status, datesArray, reason) {
+        const now = new Date();
+        const fullTimeStr = now.toLocaleDateString('ar-EG') + " الساعة " + now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        let datesList = datesArray.map(d => `• ${d.display.replace(' - 📌 اليوم', '')}`).join('\n');
         
-        let totalCount = 0;
-        let totalBeneficiaries = 0;
-
-        checkboxes.forEach(checkbox => {
-            const item = JSON.parse(checkbox.getAttribute('data-activity'));
-            
-            totalCount += item.count; 
-            totalBeneficiaries += item.beneficiaries;
-
-            outputText += `${item.date}\t${item.activity}\t${item.count}\t${item.beneficiaries}\n`;
-        });
+        let messageBody = `👑 *إشعار من المشرف*\n👤 المستهدف: ${name}\n📝 الحالة: *${status}*\n\n🗓️ الأيام:\n${datesList}\n\n🕒 وقت التحديث:\n${fullTimeStr}\n📌 ملاحظة/سبب: ${reason}`;
         
-        outputText += "--------------------------------------------------------\n";
-        outputText += `الإجمالي\t\t${totalCount}\t${totalBeneficiaries}\n`;
-
-
-        navigator.clipboard.writeText(outputText)
-            .then(() => {
-                alert(`تم نسخ تقرير مفصل لـ ${checkboxes.length} نشاطاً إلى الحافظة بنجاح.`);
-            })
-            .catch(err => {
-                console.error('فشل النسخ:', err);
-                alert('فشل في عملية النسخ إلى الحافظة.');
-            });
+        const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(messageBody.trim())}`;
+        const container = document.getElementById('whatsapp-link-container');
+        container.innerHTML = `<a href="${whatsappUrl}" target="_blank">إرسال إشعار للمجموعة عبر واتساب 📲</a>`;
+        container.style.display = 'block';
     }
 
+    window.onload = initializeForm;
 </script>
 
 </body>
