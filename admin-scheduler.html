@@ -108,7 +108,6 @@
         .term-warning { color: #ebcb8b; }
         .term-error { color: #bf616a; }
 
-        /* التمرير المخصص للـ Terminal */
         .terminal::-webkit-scrollbar { width: 8px; }
         .terminal::-webkit-scrollbar-track { background: #000; }
         .terminal::-webkit-scrollbar-thumb { background: #4c566a; border-radius: 4px; }
@@ -121,8 +120,7 @@
         <div class="cycle-badge" id="cycle-badge">جاري حساب الدورة...</div>
     </div>
 
-    <div class="grid-container" id="volunteers-grid">
-        </div>
+    <div class="grid-container" id="volunteers-grid"></div>
 
     <div class="controls">
         <button id="sync-btn" class="btn-sync" onclick="executeSync()">
@@ -151,7 +149,6 @@
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.firestore();
 
-    // البيانات الأساسية
     const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
     
     const FIXED_VOLUNTEERS = {
@@ -171,7 +168,6 @@
 
     const JS_DAY_MAP = { 0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت" };
 
-    // أدوات الواجهة (Terminal & UI)
     const terminal = document.getElementById('terminal');
     function logToTerminal(msg, type = 'term-info') {
         const row = document.createElement('div');
@@ -181,7 +177,7 @@
         terminal.scrollTop = terminal.scrollHeight;
     }
 
-    // حساب الدورة (26 - 25)
+    // تعديل الدالة لضمان شمول يوم 26 و 25 بالكامل
     function getCycleDates() {
         const now = new Date();
         let start, end;
@@ -192,10 +188,22 @@
             start = new Date(now.getFullYear(), now.getMonth() - 1, 26);
             end = new Date(now.getFullYear(), now.getMonth(), 25);
         }
+        
+        // تصفير الوقت للبداية وتعيين أقصى وقت للنهاية لضمان دقة المقارنة
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        
         return { start, end };
     }
 
-    // تهيئة الواجهة
+    // دالة مساعدة للحصول على صيغة YYYY-MM-DD بشكل مضمون
+    function formatDateKey(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function initUI() {
         const { start, end } = getCycleDates();
         document.getElementById('cycle-badge').textContent = `دورة: ${start.toLocaleDateString('en-GB')} » ${end.toLocaleDateString('en-GB')}`;
@@ -224,7 +232,6 @@
         }
     }
 
-    // المزامنة الذكية
     async function executeSync() {
         if (!confirm("تأكيد إرسال المواعيد للدورة الحالية؟ (لن يتم مسح أي بيانات سابقة)")) return;
 
@@ -233,13 +240,13 @@
         btn.innerHTML = 'جاري المعالجة... ⏳';
         
         const { start, end } = getCycleDates();
-        logToTerminal(`بدء فحص الدورة من ${start.toISOString().split('T')[0]} إلى ${end.toISOString().split('T')[0]}`, 'term-warning');
+        
+        const startKey = formatDateKey(start);
+        const endKey = formatDateKey(end);
+
+        logToTerminal(`بدء فحص الدورة من ${startKey} إلى ${endKey}`, 'term-warning');
 
         try {
-            const startKey = start.toISOString().split('T')[0];
-            const endKey = end.toISOString().split('T')[0];
-            
-            // جلب البيانات الموجودة لتجنب الكتابة فوقها
             const snapshot = await db.collection("user_attendance")
                 .where("dateKey", ">=", startKey)
                 .where("dateKey", "<=", endKey)
@@ -255,9 +262,10 @@
             let skippedCount = 0;
 
             let currentDate = new Date(start);
-            while (currentDate <= end) {
+            // تغيير طريقة حلقة التكرار لضمان شمول جميع الأيام بشكل دقيق
+            while (currentDate.getTime() <= end.getTime()) {
                 const dayName = JS_DAY_MAP[currentDate.getDay()];
-                const dateKey = currentDate.toISOString().split('T')[0];
+                const dateKey = formatDateKey(currentDate);
 
                 for (const [name, scheduledDays] of Object.entries(FIXED_VOLUNTEERS)) {
                     if (scheduledDays.includes(dayName)) {
@@ -270,8 +278,10 @@
                             batch.set(docRef, {
                                 volunteerName: name,
                                 status: "حضور (تلقائي)",
-                                reason: "لم يسجل (مجدول)", // كما طلبت في الرسالة الأولى
+                                // تم إزالة "لم يسجل (مجدول)" لجعلها فارغة مثل الباقين
+                                reason: "", 
                                 dateKey: dateKey,
+                                // توحيد شكل وقت التسجيل ليظهر كـ "00:00 ص" في الجدول
                                 registrationTime: `${dayName} (${currentDate.getDate()}/${currentDate.getMonth()+1}) – 00:00 ص`,
                                 timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                                 isAutoGenerated: true
@@ -280,7 +290,6 @@
                             addedCount++;
                         }
 
-                        // تنفيذ الـ Batch إذا وصل 400
                         if (opCount >= 400) {
                             await batch.commit();
                             batch = db.batch();
@@ -289,6 +298,7 @@
                         }
                     }
                 }
+                // إضافة يوم واحد
                 currentDate.setDate(currentDate.getDate() + 1);
             }
 
@@ -308,7 +318,6 @@
         }
     }
 
-    // تشغيل عند التحميل
     window.onload = initUI;
 </script>
 
