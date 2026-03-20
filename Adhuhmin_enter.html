@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>أرشيف السجلات المستبعدة (خارج الدورة)</title>
+    <title>إدارة السجلات المتقدمة - لوحة التحكم</title>
     <style>
         :root {
-            --bg-color: #f4f4f9;
+            --bg-color: #f4f6f9;
             --container-bg: #ffffff;
             --text-color: #333;
-            --border-color: #ddd;
-            --header-bg: #dc3545;
+            --border-color: #dee2e6;
+            --header-bg: #343a40;
+            --primary: #007bff;
+            --danger: #dc3545;
+            --success: #28a745;
         }
 
         body.dark-mode {
@@ -18,110 +21,101 @@
             --container-bg: #1e1e1e;
             --text-color: #e0e0e0;
             --border-color: #444;
-            --header-bg: #b02a37;
+            --header-bg: #222;
         }
 
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
             padding: 20px;
             direction: rtl;
-            transition: background-color 0.3s, color 0.3s;
+            transition: 0.3s;
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             background: var(--container-bg);
             padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            border-top: 5px solid var(--header-bg);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
         }
 
-        h1 {
-            color: var(--header-bg);
-            text-align: center;
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             border-bottom: 2px solid var(--border-color);
-            padding-bottom: 10px;
+            padding-bottom: 15px;
             margin-bottom: 20px;
         }
 
-        .stats-container {
-            display: flex;
-            justify-content: space-around;
-            background-color: #e9ecef;
+        h1 { margin: 0; color: var(--text-color); font-size: 1.8em; }
+
+        .btn {
+            padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer;
+            font-weight: bold; transition: 0.2s; font-size: 0.9em;
+        }
+        .btn-dark { background: #444; color: #fff; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-danger:disabled { background: #e49199; cursor: not-allowed; }
+
+        /* نظام التصفية */
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+            background: rgba(0, 123, 255, 0.05);
             padding: 15px;
             border-radius: 8px;
-            margin-bottom: 20px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        body.dark-mode .stats-container {
-            background-color: #2c2c2c;
-        }
-
-        .stat-box {
-            padding: 10px;
-        }
-
-        .stat-number {
-            font-size: 1.5em;
-            display: block;
-            margin-top: 5px;
-        }
-
-        .text-primary { color: #007bff; }
-        .text-success { color: #28a745; }
-        .text-danger { color: #dc3545; }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            font-size: 0.9em;
-        }
-
-        th, td {
-            padding: 12px 15px;
             border: 1px solid var(--border-color);
-            text-align: right;
         }
 
-        th {
-            background-color: var(--header-bg);
-            color: white;
-            position: sticky;
-            top: 0;
+        .filter-group { display: flex; flex-direction: column; }
+        .filter-group label { font-size: 0.85em; margin-bottom: 5px; font-weight: bold; color: #666; }
+        body.dark-mode .filter-group label { color: #aaa; }
+        .filter-group input, .filter-group select {
+            padding: 8px; border: 1px solid var(--border-color); border-radius: 4px;
+            background: var(--container-bg); color: var(--text-color);
         }
 
-        tr:nth-child(even) {
-            background-color: rgba(0,0,0,0.02);
+        /* الجدول */
+        .table-responsive {
+            overflow-x: auto;
+            max-height: 600px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
         }
 
-        body.dark-mode tr:nth-child(even) {
-            background-color: rgba(255,255,255,0.02);
+        table { width: 100%; border-collapse: collapse; text-align: right; }
+        th, td { padding: 12px; border-bottom: 1px solid var(--border-color); }
+        th { 
+            background-color: var(--header-bg); color: white; 
+            position: sticky; top: 0; z-index: 10;
+        }
+        
+        tr:hover { background-color: rgba(0, 123, 255, 0.05); }
+        
+        .status-badge {
+            padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: bold; color: white;
+        }
+        .status-present { background-color: var(--success); }
+        .status-absent { background-color: var(--danger); }
+
+        .action-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 15px; padding: 10px; background: rgba(220, 53, 69, 0.1);
+            border-radius: 8px; border: 1px solid rgba(220, 53, 69, 0.2);
         }
 
-        tr:hover {
-            background-color: rgba(0, 123, 255, 0.1);
-        }
-
-        .theme-toggle {
-            background: #444; color: #fff; border: none;
-            padding: 8px 15px; border-radius: 20px; cursor: pointer;
-            font-size: 0.9em; margin-bottom: 15px; display: inline-block;
-        }
-
-        #loading {
-            text-align: center;
-            font-size: 1.2em;
-            color: #666;
-            margin: 20px 0;
-        }
+        #loading { text-align: center; font-size: 1.2em; margin: 40px 0; font-weight: bold; color: var(--primary); }
+        
+        /* لتكبير مربعات الاختيار */
+        input[type="checkbox"] { transform: scale(1.3); cursor: pointer; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
@@ -129,46 +123,74 @@
 <body>
 
 <div class="container">
-    <button class="theme-toggle" onclick="toggleTheme()">الوضع الليلي 🌙</button>
-    
-    <h1>🗄️ تفاصيل السجلات المستبعدة (الأرشيف)</h1>
+    <div class="header-section">
+        <h1>⚙️ إدارة السجلات المتقدمة</h1>
+        <button class="btn btn-dark" onclick="toggleTheme()">الوضع الليلي 🌙</button>
+    </div>
 
-    <div class="stats-container">
-        <div class="stat-box">
-            إجمالي السجلات
-            <span class="stat-number text-primary" id="total-count">0</span>
+    <div class="filter-grid">
+        <div class="filter-group">
+            <label>البحث بالاسم:</label>
+            <input type="text" id="search-name" placeholder="اكتب اسم المتطوع..." onkeyup="applyFilters()">
         </div>
-        <div class="stat-box">
-            سجلات الدورة الحالية
-            <span class="stat-number text-success" id="current-count">0</span>
+        <div class="filter-group">
+            <label>تصنيف الدورة:</label>
+            <select id="filter-cycle" onchange="applyFilters()">
+                <option value="all">عرض كل السجلات (الكل)</option>
+                <option value="current">سجلات الشهر الحالي فقط</option>
+                <option value="skipped">السجلات القديمة (المستبعدة)</option>
+            </select>
         </div>
-        <div class="stat-box">
-            السجلات المستبعدة
-            <span class="stat-number text-danger" id="skipped-count">0</span>
+        <div class="filter-group">
+            <label>الحالة:</label>
+            <select id="filter-status" onchange="applyFilters()">
+                <option value="all">الكل</option>
+                <option value="حضور">حضور</option>
+                <option value="اعتذار">اعتذار / إجازة</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>التاريخ (من):</label>
+            <input type="date" id="date-from" onchange="applyFilters()">
+        </div>
+        <div class="filter-group">
+            <label>التاريخ (إلى):</label>
+            <input type="date" id="date-to" onchange="applyFilters()">
         </div>
     </div>
 
-    <p style="text-align: center; font-size: 0.9em; color: gray;" id="cycle-info"></p>
+    <div class="action-bar">
+        <div>
+            <span id="selected-count" style="font-weight: bold; color: var(--danger);">0</span> سجلات محددة
+        </div>
+        <button class="btn btn-danger" id="delete-btn" onclick="deleteSelected()" disabled>
+            🗑️ مسح السجلات المحددة
+        </button>
+    </div>
 
-    <div id="loading">جاري جلب البيانات من القاعدة... ⏳</div>
+    <div id="loading">جاري مزامنة وجلب البيانات... ⏳</div>
 
-    <table id="records-table" style="display: none;">
-        <thead>
-            <tr>
-                <th>اسم المتطوع</th>
-                <th>التاريخ</th>
-                <th>الحالة</th>
-                <th>السبب</th>
-                <th>وقت التسجيل</th>
-            </tr>
-        </thead>
-        <tbody id="table-body">
-            </tbody>
-    </table>
+    <div class="table-responsive" style="display: none;" id="table-container">
+        <table id="records-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px;"><input type="checkbox" id="select-all" onclick="toggleSelectAll()"></th>
+                    <th>الاسم</th>
+                    <th>التاريخ (سنة-شهر-يوم)</th>
+                    <th>الحالة</th>
+                    <th>السبب</th>
+                    <th>وقت التسجيل 🕒</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+                </tbody>
+        </table>
+    </div>
 </div>
 
 <script>
-    // إعدادات Firebase
+    // 1. إعدادات Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -180,95 +202,185 @@
     if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
     const db = firebase.firestore();
 
-    function toggleTheme() { 
-        document.body.classList.toggle('dark-mode'); 
+    let allRecords = []; // لتخزين كل البيانات محلياً لتسريع الفلترة
+    let currentStartKey, currentEndKey;
+
+    // 2. حساب تواريخ الدورة الحالية
+    function calculateCurrentCycle() {
+        const now = new Date();
+        let startDate, endDate;
+        if (now.getDate() >= 26) {
+            startDate = new Date(now.getFullYear(), now.getMonth(), 26);
+            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 25);
+        } else {
+            startDate = new Date(now.getFullYear(), now.getMonth() - 1, 26);
+            endDate = new Date(now.getFullYear(), now.getMonth(), 25);
+        }
+        
+        currentStartKey = `${startDate.getFullYear()}-${String(startDate.getMonth()+1).padStart(2,'0')}-${String(startDate.getDate()).padStart(2,'0')}`;
+        currentEndKey = `${endDate.getFullYear()}-${String(endDate.getMonth()+1).padStart(2,'0')}-${String(endDate.getDate()).padStart(2,'0')}`;
     }
 
-    function formatDateKey(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    async function loadSkippedRecords() {
+    // 3. جلب البيانات من القاعدة
+    async function loadData() {
+        calculateCurrentCycle();
         try {
-            // 1. تحديد نطاق الدورة الحالية
-            const now = new Date();
-            let startDate, endDate;
-            if (now.getDate() >= 26) {
-                startDate = new Date(now.getFullYear(), now.getMonth(), 26);
-                endDate = new Date(now.getFullYear(), now.getMonth() + 1, 25);
-            } else {
-                startDate = new Date(now.getFullYear(), now.getMonth() - 1, 26);
-                endDate = new Date(now.getFullYear(), now.getMonth(), 25);
-            }
-
-            const startKey = formatDateKey(startDate);
-            const endKey = formatDateKey(endDate);
-
-            document.getElementById('cycle-info').textContent = `الدورة الحالية المعتمدة: من ${startKey} إلى ${endKey}`;
-
-            // 2. جلب كل البيانات
             const snapshot = await db.collection("user_attendance").get();
-            
-            let totalCount = snapshot.size;
-            let currentCount = 0;
-            let skippedRecords = [];
-
-            // 3. فرز البيانات (مستبعدة / حالية)
+            allRecords = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
-                if (!data.dateKey) return; // تخطي السجلات التالفة إن وجدت
-
-                // السجل خارج النطاق إذا كان قبل البداية أو بعد النهاية
-                if (data.dateKey < startKey || data.dateKey > endKey) {
-                    skippedRecords.push(data);
-                } else {
-                    currentCount++;
-                }
+                allRecords.push({
+                    id: doc.id, // معرف المستند المهم جداً لعملية المسح
+                    ...data
+                });
             });
-
-            // تحديث الإحصائيات
-            document.getElementById('total-count').textContent = totalCount;
-            document.getElementById('current-count').textContent = currentCount;
-            document.getElementById('skipped-count').textContent = skippedRecords.length;
-
-            // 4. ترتيب السجلات المستبعدة من الأحدث للأقدم
-            skippedRecords.sort((a, b) => b.dateKey.localeCompare(a.dateKey));
-
-            // 5. عرض البيانات في الجدول
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
-
-            skippedRecords.forEach(record => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td style="font-weight: bold;">${record.volunteerName || '-'}</td>
-                    <td><span style="background:#eee; padding:3px 8px; border-radius:4px; color:#333;">${record.dateKey || '-'}</span></td>
-                    <td>
-                        <span style="color: ${record.status === 'حضور' ? '#28a745' : '#dc3545'}; font-weight: bold;">
-                            ${record.status || '-'}
-                        </span>
-                    </td>
-                    <td>${record.reason || '-'}</td>
-                    <td style="font-size: 0.85em; color: #666;">${record.registrationTime || '-'}</td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            // إخفاء التحميل وإظهار الجدول
+            
+            // ترتيب البيانات من الأحدث للأقدم
+            allRecords.sort((a, b) => (b.dateKey || "").localeCompare(a.dateKey || ""));
+            
             document.getElementById('loading').style.display = 'none';
-            document.getElementById('records-table').style.display = 'table';
-
+            document.getElementById('table-container').style.display = 'block';
+            applyFilters(); // عرض البيانات مع تطبيق أي فلاتر افتراضية
         } catch (error) {
-            console.error("خطأ أثناء جلب البيانات:", error);
-            document.getElementById('loading').innerHTML = `<span style="color: red;">حدث خطأ أثناء تحميل البيانات: ${error.message}</span>`;
+            document.getElementById('loading').innerHTML = `<span style="color:red;">خطأ في جلب البيانات: ${error.message}</span>`;
         }
     }
 
-    // تشغيل الدالة عند تحميل الصفحة
-    window.onload = loadSkippedRecords;
+    // 4. تطبيق نظام التصفية (الفلترة)
+    function applyFilters() {
+        const searchName = document.getElementById('search-name').value.toLowerCase();
+        const cycleFilter = document.getElementById('filter-cycle').value;
+        const statusFilter = document.getElementById('filter-status').value;
+        const dateFrom = document.getElementById('date-from').value;
+        const dateTo = document.getElementById('date-to').value;
+
+        const filteredRecords = allRecords.filter(record => {
+            if (!record.dateKey) return false;
+
+            // فلتر الاسم
+            if (searchName && (!record.volunteerName || !record.volunteerName.toLowerCase().includes(searchName))) return false;
+            
+            // فلتر الحالة
+            if (statusFilter !== 'all' && record.status !== statusFilter) return false;
+
+            // فلتر الدورة
+            const isCurrentCycle = record.dateKey >= currentStartKey && record.dateKey <= currentEndKey;
+            if (cycleFilter === 'current' && !isCurrentCycle) return false;
+            if (cycleFilter === 'skipped' && isCurrentCycle) return false;
+
+            // فلتر التاريخ المخصص
+            if (dateFrom && record.dateKey < dateFrom) return false;
+            if (dateTo && record.dateKey > dateTo) return false;
+
+            return true;
+        });
+
+        renderTable(filteredRecords);
+    }
+
+    // 5. رسم الجدول بناءً على البيانات
+    function renderTable(records) {
+        const tbody = document.getElementById('table-body');
+        tbody.innerHTML = '';
+        
+        // إعادة تعيين زر تحديد الكل
+        document.getElementById('select-all').checked = false;
+        updateSelectedCount();
+
+        if(records.length === 0){
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding: 20px;">لا توجد سجلات مطابقة للبحث</td></tr>`;
+            return;
+        }
+
+        records.forEach(record => {
+            const statusClass = record.status === 'حضور' ? 'status-present' : 'status-absent';
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="checkbox" class="record-checkbox" value="${record.id}" onclick="updateSelectedCount()"></td>
+                <td style="font-weight:bold;">${record.volunteerName || '-'}</td>
+                <td style="direction: ltr; text-align: right;">${record.dateKey || '-'}</td>
+                <td><span class="status-badge ${statusClass}">${record.status || '-'}</span></td>
+                <td>${record.reason || '-'}</td>
+                <td style="font-size: 0.9em; color: #555;">${record.registrationTime || '-'}</td>
+                <td>
+                    <button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8em;" onclick="deleteSingleRecord('${record.id}')">مسح</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    // 6. دوال التحديد
+    function toggleSelectAll() {
+        const isChecked = document.getElementById('select-all').checked;
+        const checkboxes = document.querySelectorAll('.record-checkbox');
+        checkboxes.forEach(cb => cb.checked = isChecked);
+        updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+        const selected = document.querySelectorAll('.record-checkbox:checked').length;
+        document.getElementById('selected-count').textContent = selected;
+        const deleteBtn = document.getElementById('delete-btn');
+        deleteBtn.disabled = selected === 0;
+    }
+
+    // 7. دوال المسح والحذف من Firebase
+    async function deleteSingleRecord(docId) {
+        if (!confirm('هل أنت متأكد من مسح هذا السجل بصفة نهائية؟')) return;
+        
+        try {
+            await db.collection("user_attendance").doc(docId).delete();
+            // تحديث المصفوفة المحلية وإعادة رسم الجدول بدون تحميل من جديد
+            allRecords = allRecords.filter(r => r.id !== docId);
+            applyFilters();
+        } catch (error) {
+            alert('حدث خطأ أثناء المسح: ' + error.message);
+        }
+    }
+
+    async function deleteSelected() {
+        const checkboxes = document.querySelectorAll('.record-checkbox:checked');
+        const count = checkboxes.length;
+        
+        if (count === 0) return;
+        if (!confirm(`تحذير عالي الأهمية ⚠️\nهل أنت متأكد من مسح عدد (${count}) سجل نهائياً؟\nلا يمكن التراجع عن هذا الإجراء!`)) return;
+
+        const deleteBtn = document.getElementById('delete-btn');
+        deleteBtn.textContent = 'جاري المسح...';
+        deleteBtn.disabled = true;
+
+        try {
+            // نستخدم Firebase Batch للمسح الجماعي بسرعة وأمان
+            const batch = db.batch();
+            const idsToDelete = [];
+
+            checkboxes.forEach(cb => {
+                const docRef = db.collection("user_attendance").doc(cb.value);
+                batch.delete(docRef);
+                idsToDelete.push(cb.value);
+            });
+
+            await batch.commit(); // تنفيذ الحذف في القاعدة
+            
+            // تحديث المصفوفة المحلية
+            allRecords = allRecords.filter(r => !idsToDelete.includes(r.id));
+            applyFilters(); // إعادة رسم الجدول
+            
+            alert(`✅ تم مسح ${count} سجل بنجاح.`);
+            
+        } catch (error) {
+            alert('حدث خطأ أثناء المسح الجماعي: ' + error.message);
+        } finally {
+            deleteBtn.textContent = '🗑️ مسح السجلات المحددة';
+            updateSelectedCount();
+        }
+    }
+
+    function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+
+    // بدء التشغيل
+    window.onload = loadData;
 </script>
 
 </body>
