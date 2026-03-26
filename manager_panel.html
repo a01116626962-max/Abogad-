@@ -102,6 +102,33 @@
             letter-spacing: 1px;
         }
 
+        /* ستايل قائمة اختيار الشهور الجديد */
+        .month-select-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .month-select-box label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--accent-color);
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        .month-select-box select {
+            width: 100%;
+            padding: 8px;
+            background: #2d3748;
+            color: white;
+            border: 1px solid #4a5568;
+            border-radius: 4px;
+            cursor: pointer;
+            outline: none;
+            font-family: inherit;
+        }
+
         .stats-box {
             background: rgba(255,255,255,0.05);
             border-radius: 8px;
@@ -234,10 +261,9 @@
             <span class="version-text">نظام المتطوعين الذكي</span>
         </div>
 
-        <div class="stats-box" style="padding-bottom: 10px;">
-            <label for="month-selector" style="display:block; margin-bottom:8px; font-size: 0.9rem; color: var(--accent-color); font-weight: bold;">📅 تنقل بين الشهور:</label>
-            <select id="month-selector" onchange="changeMonthCycle()" style="width:100%; padding:8px; border-radius:6px; background-color: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); outline: none; cursor: pointer; font-family: inherit;">
-            </select>
+        <div class="month-select-box">
+            <label>📅 أرشيف الشهور</label>
+            <select id="cycle-selector" onchange="handleCycleChange()"></select>
         </div>
 
         <div class="stats-box">
@@ -298,10 +324,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // --- الإعدادات الثابتة والمواعيد ---
     const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
     
-    // 💡 قائمة المتطوعين (تم التعديل: كل متطوع في سطر لتسهيل التعديل)
     const FIXED_VOLUNTEERS = {
     "شيماء":            WORKING_DAYS,
     "حبيبة":            WORKING_DAYS,
@@ -317,19 +341,15 @@
     "شمس":              WORKING_DAYS
 };
 
-    // الترتيب المطلوب للعرض
     const VOLUNTEER_NAMES_ORDERED = Object.keys(FIXED_VOLUNTEERS);
     
-    // المتغيرات العامة
     let allAttendanceData = {};
     let cycleWeeks = [];
     let cycleDaysCache = {};
     let currentWhatsappData = {};
     let finalReportData = {};
     let currentCycleInfo = {};
-    
-    // التعديل هنا: متغير لحفظ الدورة المخصصة
-    let customCycleStart = null; 
+    let selectedCycleOffset = 0; // 0 هو الشهر الحالي
 
     const DAY_MAP = { 0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت" };
     const MONTH_MAP = {
@@ -338,49 +358,6 @@
         "ينايـر": 0, "فبرايـر": 1, "مـارس": 2, "إبريـل": 3, "مايـو": 4, "يونيـو": 5, 
         "يوليـو": 6, "أغسطـس": 7, "سبتمبـر": 8, "أكتوبـر": 9, "نوفمبـر": 10, "ديسمبـر": 11 
     };
-
-    // --- التعديل هنا: دوال القائمة المنسدلة للشهور ---
-    function populateMonthSelector() {
-        const selector = document.getElementById('month-selector');
-        const today = new Date();
-        
-        let currentStart;
-        if (today.getDate() <= 25) {
-            currentStart = new Date(today.getFullYear(), today.getMonth() - 1, 26);
-        } else {
-            currentStart = new Date(today.getFullYear(), today.getMonth(), 26);
-        }
-
-        const arMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
-
-        // شهر مقدم (+1) لغاية 10 شهور ورا (-10) بالإضافة للشهر الحالي (0) = 12 شهر
-        for (let i = 1; i >= -10; i--) {
-            let s = new Date(currentStart.getFullYear(), currentStart.getMonth() + i, 26);
-            let e = new Date(currentStart.getFullYear(), currentStart.getMonth() + i + 1, 25);
-            
-            let option = document.createElement('option');
-            option.value = s.toISOString(); // نحفظ تاريخ بداية الدورة
-            
-            option.text = `دورة ${arMonths[e.getMonth()]} ${e.getFullYear()}`;
-            
-            if (i === 0) {
-                option.selected = true; // نحدد الدورة الحالية كافتراضي
-            }
-            selector.appendChild(option);
-        }
-    }
-
-    function changeMonthCycle() {
-        const selector = document.getElementById('month-selector');
-        customCycleStart = new Date(selector.value);
-        
-        // استدعاء دالة تحديث البيانات بالدورة الجديدة
-        if (typeof initializeWeeksAndFetchData === "function") {
-            initializeWeeksAndFetchData();
-        }
-    }
-
-    // --- دوال مساعدة للتواريخ ---
 
     function formatDateKey(date) {
         const y = date.getFullYear();
@@ -416,7 +393,6 @@
         return null;
     }
 
-    // --- دوال الواجهة ---
     function toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('active');
         document.querySelector('.overlay').classList.toggle('active');
@@ -442,35 +418,52 @@
         document.getElementById(containerId).innerHTML = html;
     }
 
+    // بناء قائمة الشهور في الـ Sidebar
+    function buildCycleSelector() {
+        const selector = document.getElementById('cycle-selector');
+        const arMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+        const today = new Date();
+        
+        selector.innerHTML = '';
+        
+        // شهر مقدم (i=1) و الشهر الحالي (i=0) و 10 شهور سابقة
+        for(let i = 1; i >= -10; i--) {
+            const date = new Date(today.getFullYear(), today.getMonth() + i, 1);
+            const option = document.createElement('option');
+            option.value = i;
+            option.text = `${arMonths[date.getMonth()]} ${date.getFullYear()}` + (i === 0 ? ' (الحالي)' : '');
+            if(i === 0) option.selected = true;
+            selector.appendChild(option);
+        }
+    }
+
+    function handleCycleChange() {
+        selectedCycleOffset = parseInt(document.getElementById('cycle-selector').value);
+        initializeWeeksAndFetchData();
+    }
+
     function initSidebar() {
         const now = new Date();
         renderCalendar(now, 'cal-current-body', 'cal-current-title');
         renderCalendar(new Date(now.getFullYear(), now.getMonth()+1, 1), 'cal-next-body', 'cal-next-title');
-        populateMonthSelector(); // التعديل هنا: تشغيل القائمة عند التحميل
+        buildCycleSelector();
     }
 
-    // --- منطق الدورة والأسابيع ---
-
-    // التعديل هنا: الدالة بقت بتعتمد على الدورة المخصصة لو المستخدم اختارها
+    // تعديل الدالة لتعتمد على الشهر المختار
     function getCycleDates() {
+        const today = new Date();
+        // نطبق الإزاحة المختارة
+        const targetDate = new Date(today.getFullYear(), today.getMonth() + selectedCycleOffset, today.getDate());
+        
         let start, end;
-        
-        if (customCycleStart) {
-            // لو تم اختيار شهر معين من القائمة
-            start = new Date(customCycleStart);
-            end = new Date(start.getFullYear(), start.getMonth() + 1, 25);
+        // إذا كان اليوم المختار قبل 25، الدورة تبدأ من 26 الشهر السابق له
+        if (targetDate.getDate() <= 25) {
+            start = new Date(targetDate.getFullYear(), targetDate.getMonth() - 1, 26);
+            end = new Date(targetDate.getFullYear(), targetDate.getMonth(), 25);
         } else {
-            // الوضع الافتراضي (الشهر الحالي)
-            const today = new Date();
-            if (today.getDate() <= 25) {
-                start = new Date(today.getFullYear(), today.getMonth() - 1, 26);
-                end = new Date(today.getFullYear(), today.getMonth(), 25);
-            } else {
-                start = new Date(today.getFullYear(), today.getMonth(), 26);
-                end = new Date(today.getFullYear(), today.getMonth() + 1, 25);
-            }
+            start = new Date(targetDate.getFullYear(), targetDate.getMonth(), 26);
+            end = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 25);
         }
-        
         start.setHours(0,0,0,0); end.setHours(23,59,59,999);
         
         const formatter = new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long' });
@@ -479,7 +472,6 @@
 
     function buildWeeks(start, end) {
         let curr = new Date(start);
-        
         let tempDate = new Date(start);
         while (tempDate.getDay() !== 6) {
             tempDate.setDate(tempDate.getDate() - 1);
@@ -495,20 +487,15 @@
                 let d = new Date(curr);
                 let arDay = DAY_MAP[d.getDay()];
                 let key = formatDateKey(d);
-                
                 const isInCycle = d >= start && d <= end;
                 const isWork = WORKING_DAYS.includes(arDay);
-
                 let info = { date: d, dayName: arDay, dateKey: key, isWork: isWork, inCycle: isInCycle };
-                
                 if (isInCycle) {
                     weekDays.push(info);
                     cycleDaysCache[key] = info;
                 }
-                
                 curr.setDate(curr.getDate() + 1);
             }
-            
             if(weekDays.length > 0) {
                 cycleWeeks.push({ 
                     id: cycleWeeks.length+1, 
@@ -519,7 +506,195 @@
         }
     }
 
-    // --- جلب البيانات وتحديث الواجهة ---
-
     function renderWeeksButtons() {
-        const container = document.getElementById('week-buttons-conta
+        const container = document.getElementById('week-buttons-container');
+        container.innerHTML = '';
+        if(cycleWeeks.length === 0) { container.innerHTML = 'لا توجد أسابيع في هذه الدورة'; return; }
+        
+        cycleWeeks.forEach(w => {
+            let btn = document.createElement('button');
+            btn.id = `wk-btn-${w.id}`;
+            btn.innerHTML = `أسبوع ${w.id}<br><span style="font-size:0.75em; opacity:0.8">${w.label}</span>`;
+            btn.onclick = () => showWeek(w);
+            container.appendChild(btn);
+        });
+    }
+
+    async function fetchAttendanceData() {
+        const msgDiv = document.getElementById('status-message');
+        msgDiv.style.display = 'block';
+        msgDiv.className = 'alert-box alert-info';
+        msgDiv.innerText = 'جاري جلب البيانات...';
+        
+        try {
+            const snap = await db.collection("user_attendance").get();
+            let raw = [];
+            snap.forEach(doc => raw.push({ id: doc.id, ...doc.data() }));
+            raw.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+            
+            allAttendanceData = {};
+            let countInCycle = 0;
+
+            raw.forEach(rec => {
+                let d = parseRegistrationDate(rec);
+                if(!d) return;
+                let key = formatDateKey(d);
+                if(!cycleDaysCache[key]) return;
+                countInCycle++;
+                if(!allAttendanceData[key]) allAttendanceData[key] = {};
+                allAttendanceData[key][rec.volunteerName] = { 
+                    status: rec.status, 
+                    reason: rec.reason || '', 
+                    time: rec.registrationTime ? rec.registrationTime.split(' – ')[1] : '' 
+                };
+            });
+            
+            document.getElementById('fetched-count').innerText = countInCycle;
+            msgDiv.className = 'alert-box alert-success';
+            msgDiv.innerText = '✅ تم التحديث';
+            setTimeout(() => msgDiv.style.display = 'none', 2000);
+            
+            jumpToTomorrow();
+
+        } catch(e) {
+            msgDiv.className = 'alert-box alert-danger';
+            msgDiv.innerText = 'خطأ: ' + e.message;
+        }
+    }
+
+    function jumpToTomorrow() {
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+
+        const tomorrowKey = formatDateKey(tomorrow);
+        let targetWeek = cycleWeeks.find(w => w.days.some(d => d.dateKey === tomorrowKey));
+        
+        if(targetWeek) {
+            showWeek(targetWeek);
+            setTimeout(() => {
+                const dayBtn = document.querySelector(`button[data-key="${tomorrowKey}"]`);
+                if(dayBtn) dayBtn.click();
+            }, 100);
+        } else {
+            if(cycleWeeks.length > 0) showWeek(cycleWeeks[0]);
+        }
+    }
+
+    async function initializeWeeksAndFetchData() {
+        currentCycleInfo = getCycleDates();
+        document.getElementById('cycle-display-area').innerHTML = 
+            `<strong>الدورة المحددة:</strong> ${currentCycleInfo.label}`;
+            
+        buildWeeks(currentCycleInfo.start, currentCycleInfo.end);
+        renderWeeksButtons();
+        await fetchAttendanceData();
+    }
+
+    function showWeek(week) {
+        document.querySelectorAll('.week-buttons button').forEach(b => b.classList.remove('active'));
+        document.getElementById(`wk-btn-${week.id}`)?.classList.add('active');
+        
+        const area = document.getElementById('week-view-area');
+        let html = `<div class="day-buttons" style="display:flex; flex-wrap:wrap; justify-content:center; margin-bottom:15px;">`;
+        week.days.filter(d => d.isWork).forEach(d => {
+            html += `<button data-key="${d.dateKey}" onclick="showDay('${d.dateKey}')">${d.dayName}<br>${d.date.getDate()}/${d.date.getMonth()+1}</button>`;
+        });
+        html += `</div><div id="day-detail-area"></div>`;
+        area.innerHTML = html;
+        
+        const firstWorkDay = week.days.find(d => d.isWork);
+        if(firstWorkDay) showDay(firstWorkDay.dateKey);
+    }
+
+    function showDay(key) {
+        document.querySelectorAll('.day-buttons button').forEach(b => b.classList.remove('active'));
+        const btn = document.querySelector(`button[data-key="${key}"]`);
+        if(btn) btn.classList.add('active');
+        
+        const info = cycleDaysCache[key];
+        const container = document.getElementById('day-detail-area');
+        if(!info) { container.innerHTML = '<p>خارج الدورة</p>'; return; }
+
+        let html = `<div style="background:white; border-radius:8px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+            <h3 style="text-align:center; color:#1e293b; margin-top:0;">يوم ${info.dayName} (${info.date.toLocaleDateString('ar-EG')})</h3>
+            <table><thead><tr><th style="text-align:right">الاسم</th><th>الحالة</th><th>ملاحظات</th></tr></thead><tbody>`;
+        
+        let whatsappNames = [];
+        VOLUNTEER_NAMES_ORDERED.forEach(name => {
+            const isScheduled = FIXED_VOLUNTEERS[name].includes(info.dayName);
+            const record = allAttendanceData[key]?.[name];
+            let statusTxt = "", statusClass = "", note = "-";
+            let isPresent = false;
+
+            if (!isScheduled && !record) {
+                statusTxt = "غير مجدول"; statusClass = "status-ns";
+            } else if (record) {
+                if (record.status === 'اعتذار') {
+                    statusTxt = "اعتذار ❌"; statusClass = "status-absent"; note = record.reason;
+                } else {
+                    statusTxt = "حضور ✅"; statusClass = "status-present"; note = record.time || 'مسجل';
+                    isPresent = true;
+                }
+            } else {
+                statusTxt = "حضور (تلقائي)"; statusClass = "status-present"; note = "مجدول";
+                isPresent = true;
+            }
+            if(isPresent) whatsappNames.push(name);
+            html += `<tr><td style="font-weight:bold;">${name}</td><td class="${statusClass}">${statusTxt}</td><td>${note}</td></tr>`;
+        });
+        html += `</tbody></table><button id="whatsapp-day-button" onclick="sendWhatsapp()">📲 واتساب (${whatsappNames.length})</button></div>`;
+        container.innerHTML = html;
+        currentWhatsappData = { date: info.date.toLocaleDateString('ar-EG', {weekday:'long', month:'long', day:'numeric'}), names: whatsappNames };
+    }
+
+    function sendWhatsapp() {
+        if(!currentWhatsappData.names) return;
+        const list = currentWhatsappData.names.map((n,i) => `${i+1}. ${n}`).join('\n');
+        const text = `📌 قائمة الحضور\n🗓️ ${currentWhatsappData.date}\n👥 العدد: ${currentWhatsappData.names.length}\n\n${list}`;
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+
+    function calculateMonthlyAttendance() {
+        const area = document.getElementById('monthly-report-area');
+        area.innerHTML = '<p>جاري الحساب...</p>';
+        const allDaysKeys = Object.keys(cycleDaysCache).sort();
+        let html = `<div style="background:#f0fdf4; padding:15px; border:1px solid #bbf7d0; margin-bottom:15px; border-radius:8px;">فترة التقرير: <strong>${currentCycleInfo.label}</strong></div>
+            <button id="copy-monthly-button" onclick="copyReport()">📋 نسخ التقرير</button>
+            <table><thead><tr><th>الاسم</th><th>أيام العمل</th><th>الحضور</th><th>اعتذار</th></tr></thead><tbody>`;
+        
+        finalReportData = {};
+        VOLUNTEER_NAMES_ORDERED.forEach(name => {
+            let expected = 0, attended = 0, apologies = 0;
+            allDaysKeys.forEach(key => {
+                const dayInfo = cycleDaysCache[key];
+                const isScheduled = FIXED_VOLUNTEERS[name].includes(dayInfo.dayName);
+                const record = allAttendanceData[key]?.[name];
+                if (isScheduled) {
+                    expected++;
+                    if (record?.status === 'اعتذار') apologies++;
+                    else attended++;
+                } else if (record?.status === 'حضور') {
+                    attended++;
+                }
+            });
+            finalReportData[name] = attended;
+            html += `<tr><td>${name}</td><td>${expected}</td><td class="status-present">${attended}</td><td class="status-absent">${apologies}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        area.innerHTML = html;
+    }
+
+    function copyReport() {
+        let txt = `تقرير الحضور (${currentCycleInfo.label})\n------------------\n`;
+        VOLUNTEER_NAMES_ORDERED.forEach(n => { if(finalReportData[n] !== undefined) txt += `${n}: ${finalReportData[n]} أيام\n`; });
+        navigator.clipboard.writeText(txt).then(() => alert('تم النسخ!'));
+    }
+
+    window.onload = () => {
+        initSidebar();
+        initializeWeeksAndFetchData();
+    };
+</script>
+</body>
+</html>
