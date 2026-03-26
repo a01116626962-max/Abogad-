@@ -3,129 +3,292 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الإدارة السنوي - الأرشيف والتقارير</title>
+    <title>نظام الحضور - V3 Pro (Smart Logic)</title>
     <style>
         :root {
-            --sidebar-width: 250px;
             --primary-color: #007bff;
-            --bg-color: #f4f4f9;
+            --sidebar-width: 260px;
+            --sidebar-bg: #1e293b;
+            --sidebar-text: #f1f5f9;
+            --accent-color: #f59e0b;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
         }
-
+        
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
             margin: 0;
-            display: flex; /* لتفعيل القائمة الجانبية */
-            background-color: var(--bg-color);
-            direction: rtl;
-        }
-
-        /* القائمة الجانبية */
-        .sidebar {
-            width: var(--sidebar-width);
-            background-color: #2c3e50;
-            color: white;
-            height: 100vh;
-            position: fixed;
-            right: 0;
-            top: 0;
-            overflow-y: auto;
-            padding: 20px 0;
-            z-index: 1000;
-        }
-
-        .sidebar h2 {
-            text-align: center;
-            font-size: 1.2em;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #34495e;
-        }
-
-        .month-item {
-            padding: 15px 20px;
-            cursor: pointer;
-            transition: 0.3s;
-            border-bottom: 1px solid #34495e;
+            padding: 0;
             display: flex;
-            justify-content: space-between;
+            height: 100vh;
+            overflow: hidden;
         }
 
-        .month-item:hover, .month-item.active {
-            background-color: var(--primary-color);
-        }
-
-        /* المحتوى الرئيسي */
-        .main-content {
-            margin-right: var(--sidebar-width);
-            flex: 1;
-            padding: 30px;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        /* الجداول والتنسيقات */
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
-        th { background-color: #f8f9fa; }
-        
-        .status-present { background-color: #d4edda; color: #155724; font-weight: bold; }
-        .status-absent { background-color: #f8d7da; color: #721c24; font-weight: bold; }
-        
-        .header-flex { display: flex; justify-content: space-between; align-items: center; }
-        
-        button {
-            padding: 10px 20px;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+        /* --- 1. القائمة الجانبية (Sidebar) --- */
+        aside.sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: -4px 0 15px rgba(0,0,0,0.2);
+            overflow-y: auto;
+            flex-shrink: 0;
+            z-index: 1000;
+            transition: transform 0.3s ease-in-out;
         }
 
         @media (max-width: 768px) {
-            .sidebar { width: 100%; height: auto; position: relative; }
-            body { flex-direction: column; }
-            .main-content { margin-right: 0; }
+            aside.sidebar {
+                position: fixed;
+                right: 0;
+                top: 0;
+                height: 100%;
+                transform: translateX(100%);
+                width: 280px;
+            }
+            aside.sidebar.active {
+                transform: translateX(0);
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.active { display: block; }
         }
+
+        .brand-box {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .close-sidebar-btn {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        @media (max-width: 768px) { .close-sidebar-btn { display: block; } }
+
+        .version-badge {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.5rem;
+            display: inline-block;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        
+        .version-text {
+            display: block;
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            letter-spacing: 1px;
+        }
+
+        .stats-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stats-number { font-size: 1.8rem; font-weight: bold; color: #38bdf8; display: block; }
+        .stats-label { font-size: 0.8rem; color: #cbd5e1; }
+
+        .calendar-wrapper { margin-bottom: 25px; }
+        .calendar-title { font-size: 0.9rem; color: var(--accent-color); margin-bottom: 10px; text-align: center; font-weight: bold; }
+        .mini-calendar { width: 100%; border-collapse: collapse; font-size: 0.75rem; color: #cbd5e1; }
+        .mini-calendar th { color: #64748b; padding: 3px; }
+        .mini-calendar td { padding: 5px; text-align: center; border: 1px solid rgba(255,255,255,0.05); }
+        .current-day { background-color: var(--primary-color); color: white; border-radius: 4px; font-weight: bold; }
+
+        /* --- 2. المحتوى الرئيسي --- */
+        main.content {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+            width: 100%;
+        }
+
+        .menu-toggle-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+            color: #1e293b;
+            padding: 0 10px;
+        }
+        @media (max-width: 768px) { .menu-toggle-btn { display: block; } }
+
+        .header-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1, h2, h3 { color: #1e293b; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+            background-color: var(--primary-color);
+            color: white;
+            font-family: inherit;
+        }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .week-buttons button { background-color: #64748b; margin: 4px; font-size: 0.9rem; }
+        .week-buttons button.active { background-color: var(--success-color); box-shadow: 0 0 0 2px rgba(16,185,129,0.3); }
+
+        .day-buttons button { 
+            background-color: white; 
+            color: #334155; 
+            border: 1px solid #cbd5e1;
+            margin: 5px; 
+            min-width: 120px;
+        }
+        .day-buttons button.active { 
+            background-color: var(--primary-color); 
+            color: white; 
+            border-color: var(--primary-color);
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; border: 1px solid #e2e8f0; text-align: center; }
+        th { background-color: #f8fafc; color: #475569; }
+        
+        .status-present { background-color: #dcfce7; color: #166534; font-weight: bold; }
+        .status-absent { background-color: #fee2e2; color: #991b1b; font-weight: bold; }
+        .status-ns { background-color: #f1f5f9; color: #94a3b8; font-size: 0.85em; }
+
+        #whatsapp-day-button { background-color: #25D366; width: 100%; margin-top: 15px; display: block; font-size: 1.1rem; }
+        #copy-monthly-button { background-color: var(--accent-color); color: white; margin-bottom: 15px; }
+
+        .alert-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .alert-info { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+        .alert-success { background-color: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+        
+        .cycle-info {
+            background: #fffbeb;
+            border: 1px solid #fcd34d;
+            color: #92400e;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
     </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 </head>
 <body>
 
-<div class="sidebar" id="sidebar">
-    <h2>أرشيف الشهور 📅</h2>
-    <div id="months-list">
-        </div>
-</div>
+    <div class="overlay" onclick="toggleSidebar()"></div>
 
-<div class="main-content">
-    <div class="container">
-        <div class="header-flex">
-            <h1 id="current-view-title">تقرير دورة: جاري التحميل...</h1>
-            <button onclick="syncCurrentMonthSchedule()">💾 حفظ مواعيد هذا الشهر</button>
+    <aside class="sidebar" id="sidebar">
+        <div class="brand-box">
+            <button class="close-sidebar-btn" onclick="toggleSidebar()">✕</button>
+            <div class="version-badge">V 3.0</div>
+            <span class="version-text">نظام المتطوعين الذكي</span>
         </div>
 
-        <div id="status-bar" style="margin: 10px 0; padding: 10px; border-radius: 5px; display: none;"></div>
-
-        <div id="report-content">
-            <p>اختر شهراً من القائمة الجانبية لعرض التقرير والمواعيد الخاصة به.</p>
+        <div class="stats-box" style="padding-bottom: 10px;">
+            <label for="month-selector" style="display:block; margin-bottom:8px; font-size: 0.9rem; color: var(--accent-color); font-weight: bold;">📅 تنقل بين الشهور:</label>
+            <select id="month-selector" onchange="changeMonthCycle()" style="width:100%; padding:8px; border-radius:6px; background-color: rgba(255,255,255,0.1); color: #fff; border: 1px solid rgba(255,255,255,0.2); outline: none; cursor: pointer; font-family: inherit;">
+            </select>
         </div>
-    </div>
-</div>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+        <div class="stats-box">
+            <span id="fetched-count" class="stats-number">0</span>
+            <span class="stats-label">سجل تم تحليله</span>
+        </div>
+
+        <div class="calendar-wrapper">
+            <div id="cal-current-title" class="calendar-title"></div>
+            <div id="cal-current-body"></div>
+        </div>
+
+        <div class="calendar-wrapper">
+            <div id="cal-next-title" class="calendar-title"></div>
+            <div id="cal-next-body"></div>
+        </div>
+    </aside>
+
+    <main class="content">
+        <div class="container">
+            <div class="header-area">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="menu-toggle-btn" onclick="toggleSidebar()">&#8942;</button>
+                    <h1 style="margin:0; border:none; font-size: 1.5rem;">🗓️ جدول الحضور</h1>
+                </div>
+                <button onclick="initializeWeeksAndFetchData()">🔄 تحديث البيانات</button>
+            </div>
+
+            <div id="status-message" class="alert-box alert-info" style="display:none;"></div>
+            
+            <div id="cycle-display-area" class="cycle-info">جاري تحديد الدورة...</div>
+
+            <div id="week-buttons-container" class="week-buttons" style="margin-bottom: 20px; display:flex; flex-wrap:wrap; justify-content:center;">
+                <p>جاري التحميل...</p>
+            </div>
+
+            <div id="week-view-area"></div>
+
+            <hr style="margin: 30px 0; border-top: 1px dashed #cbd5e1;">
+
+            <h2 onclick="calculateMonthlyAttendance()" style="cursor:pointer; font-size:1.2rem; color: #475569;">
+                📊 التقرير الشهري (اضغط هنا للحساب)
+            </h2>
+            <div id="monthly-report-area"></div>
+        </div>
+    </main>
 
 <script>
-    // إعدادات Firebase
+    // --- إعدادات Firebase ---
     const firebaseConfig = {
-        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
         projectId: "rdtt-15cbe",
         storageBucket: "rdtt-15cbe.firebasestorage.app",
@@ -135,97 +298,228 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // المواعيد الافتراضية "الحالية" (يتم تعديلها من هنا)
-    const CURRENT_MASTER_SCHEDULE = {
-        "شيماء": ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"],
-        "حبيبة": ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"],
-        "رحاب": ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"],
-        "أحمد": ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"],
-        "ساندي": ["السبت", "الأحد"], // مثال لتغيير موعد
-        // ... باقي الأسماء
+    // --- الإعدادات الثابتة والمواعيد ---
+    const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
+    
+    // 💡 قائمة المتطوعين (تم التعديل: كل متطوع في سطر لتسهيل التعديل)
+    const FIXED_VOLUNTEERS = {
+    "شيماء":            WORKING_DAYS,
+    "حبيبة":            WORKING_DAYS,
+    "رحاب":             ["السبت", "الأحد", "الثلاثاء"],
+    "أحمد":             WORKING_DAYS,
+    "محمد إبراهيم":     WORKING_DAYS,
+    "ساندي":            ["السبت", "الأحد", "الأربعاء", "الخميس"],
+    "إبراهيم":          [],
+    "معاذ":             ["الأحد", "الثلاثاء", "الخميس"],
+    "سامى":             ["السبت", "الأحد"],
+    "مازن":             WORKING_DAYS,
+    "معتز":             WORKING_DAYS,
+    "شمس":              WORKING_DAYS
+};
+
+    // الترتيب المطلوب للعرض
+    const VOLUNTEER_NAMES_ORDERED = Object.keys(FIXED_VOLUNTEERS);
+    
+    // المتغيرات العامة
+    let allAttendanceData = {};
+    let cycleWeeks = [];
+    let cycleDaysCache = {};
+    let currentWhatsappData = {};
+    let finalReportData = {};
+    let currentCycleInfo = {};
+    
+    // التعديل هنا: متغير لحفظ الدورة المخصصة
+    let customCycleStart = null; 
+
+    const DAY_MAP = { 0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت" };
+    const MONTH_MAP = {
+        "يناير": 0, "فبراير": 1, "مارس": 2, "أبريل": 3, "مايو": 4, "يونيو": 5, 
+        "يوليو": 6, "أغسطس": 7, "سبتمبر": 8, "أكتوبر": 9, "نوفمبر": 10, "ديسمبر": 11,
+        "ينايـر": 0, "فبرايـر": 1, "مـارس": 2, "إبريـل": 3, "مايـو": 4, "يونيـو": 5, 
+        "يوليـو": 6, "أغسطـس": 7, "سبتمبـر": 8, "أكتوبـر": 9, "نوفمبـر": 10, "ديسمبـر": 11 
     };
 
-    let selectedCycleID = ""; // مثال: "2026-03" (الدورة التي تبدأ في 26 فبراير وتنتهي 25 مارس)
-
-    // 1. توليد القائمة الجانبية للشهور (سنة كاملة)
-    function generateSidebar() {
-        const list = document.getElementById('months-list');
-        const now = new Date();
+    // --- التعديل هنا: دوال القائمة المنسدلة للشهور ---
+    function populateMonthSelector() {
+        const selector = document.getElementById('month-selector');
+        const today = new Date();
         
-        for (let i = 0; i < 12; i++) {
-            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const monthName = date.toLocaleDateString('ar-EG', { month: 'long' });
-            const year = date.getFullYear();
-            const cycleID = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            
-            const div = document.createElement('div');
-            div.className = 'month-item';
-            div.innerHTML = `<span>${monthName} ${year}</span> <small>26 - 25</small>`;
-            div.onclick = () => loadCycleReport(cycleID, monthName, year);
-            list.appendChild(div);
-
-            // تحميل الشهر الحالي تلقائياً
-            if (i === 0) div.click();
-        }
-    }
-
-    // 2. وظيفة "إرسال المواعيد" (تجميد مواعيد الشهر الحالي)
-    async function syncCurrentMonthSchedule() {
-        if (!confirm("هل تريد حفظ المواعيد الحالية لهذه الدورة؟ لن يؤثر التغيير المستقبلي على هذا الشهر بعد الحفظ.")) return;
-
-        try {
-            await db.collection("monthly_schedules").doc(selectedCycleID).set({
-                schedule: CURRENT_MASTER_SCHEDULE,
-                lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            showStatus("✅ تم حفظ مواعيد الدورة بنجاح!", "success");
-        } catch (e) {
-            showStatus("❌ خطأ في الحفظ: " + e.message, "error");
-        }
-    }
-
-    // 3. تحميل تقرير دورة محددة
-    async function loadCycleReport(cycleID, name, year) {
-        selectedCycleID = cycleID;
-        document.getElementById('current-view-title').textContent = `تقرير دورة: ${name} ${year}`;
-        
-        // جلب المواعيد المجمدة لهذا الشهر
-        const scheduleDoc = await db.collection("monthly_schedules").doc(cycleID).get();
-        let activeSchedule = CURRENT_MASTER_SCHEDULE;
-
-        if (scheduleDoc.exists) {
-            activeSchedule = scheduleDoc.data().schedule;
-            showStatus(`ℹ️ يتم عرض مواعيد مؤرشفة لهذا الشهر.`, "success");
+        let currentStart;
+        if (today.getDate() <= 25) {
+            currentStart = new Date(today.getFullYear(), today.getMonth() - 1, 26);
         } else {
-            showStatus(`⚠️ تحذير: لم يتم حفظ مواعيد لهذه الدورة بعد. يتم العرض بناءً على المواعيد الحالية.`, "error");
+            currentStart = new Date(today.getFullYear(), today.getMonth(), 26);
         }
 
-        renderReportTable(activeSchedule);
+        const arMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+
+        // شهر مقدم (+1) لغاية 10 شهور ورا (-10) بالإضافة للشهر الحالي (0) = 12 شهر
+        for (let i = 1; i >= -10; i--) {
+            let s = new Date(currentStart.getFullYear(), currentStart.getMonth() + i, 26);
+            let e = new Date(currentStart.getFullYear(), currentStart.getMonth() + i + 1, 25);
+            
+            let option = document.createElement('option');
+            option.value = s.toISOString(); // نحفظ تاريخ بداية الدورة
+            
+            option.text = `دورة ${arMonths[e.getMonth()]} ${e.getFullYear()}`;
+            
+            if (i === 0) {
+                option.selected = true; // نحدد الدورة الحالية كافتراضي
+            }
+            selector.appendChild(option);
+        }
     }
 
-    function renderReportTable(schedule) {
-        let html = `<table><thead><tr><th>الاسم</th><th>أيام العمل</th><th>الحالة</th></tr></thead><tbody>`;
+    function changeMonthCycle() {
+        const selector = document.getElementById('month-selector');
+        customCycleStart = new Date(selector.value);
         
-        for (const [name, days] of Object.entries(schedule)) {
-            html += `<tr>
-                <td>${name}</td>
-                <td>${days.join(' - ')}</td>
-                <td><button onclick="alert('تفاصيل ${name}')">عرض السجل</button></td>
-            </tr>`;
+        // استدعاء دالة تحديث البيانات بالدورة الجديدة
+        if (typeof initializeWeeksAndFetchData === "function") {
+            initializeWeeksAndFetchData();
         }
-        html += `</tbody></table>`;
-        document.getElementById('report-content').innerHTML = html;
     }
 
-    function showStatus(msg, type) {
-        const bar = document.getElementById('status-bar');
-        bar.textContent = msg;
-        bar.style.display = 'block';
-        bar.style.backgroundColor = type === 'success' ? '#d4edda' : '#f8d7da';
-        bar.style.color = type === 'success' ? '#155724' : '#721c24';
+    // --- دوال مساعدة للتواريخ ---
+
+    function formatDateKey(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
     }
 
-    window.onload = generateSidebar;
-</script>
-</body>
-</html>
+    function parseRegistrationDate(data) {
+        let recordDate = null;
+        if (data.dateKey && data.dateKey.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            recordDate = new Date(data.dateKey); 
+        } else if (data.registrationDateTimestamp && typeof data.registrationDateTimestamp.toDate === 'function') {
+            recordDate = data.registrationDateTimestamp.toDate();
+        } else if (data.registrationTime) {
+            const timeString = data.registrationTime;
+            const datePart = timeString.split(' – ')[0].trim();
+            const parts = datePart.split(' ');
+            if (parts.length >= 3) {
+                const day = parseInt(parts[0]);
+                const monthName = parts[1].trim().replace(/[\u200e\u200f\s]/g, ''); 
+                const month = MONTH_MAP[monthName];
+                const year = parseInt(parts[2]);
+                if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+                    recordDate = new Date(year, month, day);
+                }
+            }
+        }
+        if (recordDate && !isNaN(recordDate)) {
+             recordDate.setHours(0, 0, 0, 0); 
+             return recordDate;
+        }
+        return null;
+    }
+
+    // --- دوال الواجهة ---
+    function toggleSidebar() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.querySelector('.overlay').classList.toggle('active');
+    }
+
+    function renderCalendar(date, containerId, titleId) {
+        const arMonths = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        document.getElementById(titleId).innerText = `${arMonths[month]} ${year}`;
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        let html = '<table class="mini-calendar"><thead><tr><th>ح</th><th>ن</th><th>ث</th><th>ر</th><th>خ</th><th>ج</th><th>س</th></tr></thead><tbody><tr>';
+        for(let i=0; i<firstDay.getDay(); i++) html += '<td></td>';
+        const today = new Date();
+        for(let d=1; d<=lastDay.getDate(); d++) {
+            const curr = new Date(year, month, d);
+            const isToday = (curr.toDateString() === today.toDateString());
+            html += `<td class="${isToday ? 'current-day' : ''}">${d}</td>`;
+            if(curr.getDay() === 6) html += '</tr><tr>';
+        }
+        html += '</tr></tbody></table>';
+        document.getElementById(containerId).innerHTML = html;
+    }
+
+    function initSidebar() {
+        const now = new Date();
+        renderCalendar(now, 'cal-current-body', 'cal-current-title');
+        renderCalendar(new Date(now.getFullYear(), now.getMonth()+1, 1), 'cal-next-body', 'cal-next-title');
+        populateMonthSelector(); // التعديل هنا: تشغيل القائمة عند التحميل
+    }
+
+    // --- منطق الدورة والأسابيع ---
+
+    // التعديل هنا: الدالة بقت بتعتمد على الدورة المخصصة لو المستخدم اختارها
+    function getCycleDates() {
+        let start, end;
+        
+        if (customCycleStart) {
+            // لو تم اختيار شهر معين من القائمة
+            start = new Date(customCycleStart);
+            end = new Date(start.getFullYear(), start.getMonth() + 1, 25);
+        } else {
+            // الوضع الافتراضي (الشهر الحالي)
+            const today = new Date();
+            if (today.getDate() <= 25) {
+                start = new Date(today.getFullYear(), today.getMonth() - 1, 26);
+                end = new Date(today.getFullYear(), today.getMonth(), 25);
+            } else {
+                start = new Date(today.getFullYear(), today.getMonth(), 26);
+                end = new Date(today.getFullYear(), today.getMonth() + 1, 25);
+            }
+        }
+        
+        start.setHours(0,0,0,0); end.setHours(23,59,59,999);
+        
+        const formatter = new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long' });
+        return { start, end, label: `${formatter.format(start)} إلى ${formatter.format(end)}` };
+    }
+
+    function buildWeeks(start, end) {
+        let curr = new Date(start);
+        
+        let tempDate = new Date(start);
+        while (tempDate.getDay() !== 6) {
+            tempDate.setDate(tempDate.getDate() - 1);
+        }
+        curr = tempDate;
+
+        cycleWeeks = [];
+        cycleDaysCache = {};
+
+        while(curr <= end) {
+            let weekDays = [];
+            for(let i=0; i<7; i++) {
+                let d = new Date(curr);
+                let arDay = DAY_MAP[d.getDay()];
+                let key = formatDateKey(d);
+                
+                const isInCycle = d >= start && d <= end;
+                const isWork = WORKING_DAYS.includes(arDay);
+
+                let info = { date: d, dayName: arDay, dateKey: key, isWork: isWork, inCycle: isInCycle };
+                
+                if (isInCycle) {
+                    weekDays.push(info);
+                    cycleDaysCache[key] = info;
+                }
+                
+                curr.setDate(curr.getDate() + 1);
+            }
+            
+            if(weekDays.length > 0) {
+                cycleWeeks.push({ 
+                    id: cycleWeeks.length+1, 
+                    days: weekDays,
+                    label: `${weekDays[0].date.getDate()}/${weekDays[0].date.getMonth()+1} - ${weekDays[weekDays.length-1].date.getDate()}/${weekDays[weekDays.length-1].date.getMonth()+1}`
+                });
+            }
+        }
+    }
+
+    // --- جلب البيانات وتحديث الواجهة ---
+
+    function renderWeeksButtons() {
+        const container = document.getElementById('week-buttons-conta
