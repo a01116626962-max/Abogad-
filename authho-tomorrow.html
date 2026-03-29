@@ -214,7 +214,6 @@
             padding: 10px;
             border-radius: 6px;
             text-align: center;
-            margin-bottom: 15px;
             font-size: 0.9rem;
         }
 
@@ -262,7 +261,12 @@
 
             <div id="status-message" class="alert-box alert-info" style="display:none;"></div>
             
-            <div id="cycle-display-area" class="cycle-info">جاري تحديد الدورة...</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 10px;">
+                <button onclick="changeCycle(-1)" style="background-color: #64748b; padding: 8px 12px; font-size: 0.9rem;">⬅️ الدورة السابقة</button>
+                <div id="cycle-display-area" class="cycle-info" style="margin-bottom: 0; flex-grow: 1;">جاري تحديد الدورة...</div>
+                <button onclick="changeCycle(1)" style="background-color: #64748b; padding: 8px 12px; font-size: 0.9rem;">الدورة التالية ➡️</button>
+                <button onclick="resetCycle()" style="background-color: var(--primary-color); padding: 8px 12px; font-size: 0.9rem;">🔄 الحالية</button>
+            </div>
 
             <div id="week-buttons-container" class="week-buttons" style="margin-bottom: 20px; display:flex; flex-wrap:wrap; justify-content:center;">
                 <p>جاري التحميل...</p>
@@ -295,21 +299,21 @@
     // --- الإعدادات الثابتة والمواعيد ---
     const WORKING_DAYS = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس"];
     
-    // 💡 قائمة المتطوعين (تم التعديل: كل متطوع في سطر لتسهيل التعديل)
+    // 💡 قائمة المتطوعين
     const FIXED_VOLUNTEERS = {
-    "شيماء":            WORKING_DAYS,
-    "حبيبة":            WORKING_DAYS,
-    "رحاب":             ["السبت", "الأحد", "الثلاثاء"],
-    "أحمد":             WORKING_DAYS,
-    "محمد إبراهيم":     WORKING_DAYS,
-    "ساندي":            ["السبت", "الأحد", "الأربعاء", "الخميس"],
-    "إبراهيم":          [],
-    "معاذ":             ["الأحد", "الثلاثاء", "الخميس"],
-    "سامى":             ["السبت", "الأحد"],
-    "مازن":             WORKING_DAYS,
-    "معتز":             WORKING_DAYS,
-    "شمس":              WORKING_DAYS
-};
+        "شيماء":            WORKING_DAYS,
+        "حبيبة":            WORKING_DAYS,
+        "رحاب":             ["السبت", "الأحد", "الثلاثاء"],
+        "أحمد":             WORKING_DAYS,
+        "محمد إبراهيم":     WORKING_DAYS,
+        "ساندي":            ["السبت", "الأحد", "الأربعاء", "الخميس"],
+        "إبراهيم":          [],
+        "معاذ":             ["الأحد", "الثلاثاء", "الخميس"],
+        "سامى":             ["السبت", "الأحد"],
+        "مازن":             WORKING_DAYS,
+        "معتز":             WORKING_DAYS,
+        "شمس":              WORKING_DAYS
+    };
 
     // الترتيب المطلوب للعرض
     const VOLUNTEER_NAMES_ORDERED = Object.keys(FIXED_VOLUNTEERS);
@@ -321,6 +325,7 @@
     let currentWhatsappData = {};
     let finalReportData = {};
     let currentCycleInfo = {};
+    let cycleOffsetMonths = 0; // متغير التتبع الجديد للدورات
 
     const DAY_MAP = { 0: "الأحد", 1: "الإثنين", 2: "الثلاثاء", 3: "الأربعاء", 4: "الخميس", 5: "الجمعة", 6: "السبت" };
     const MONTH_MAP = {
@@ -384,7 +389,7 @@
         const today = new Date();
         for(let d=1; d<=lastDay.getDate(); d++) {
             const curr = new Date(year, month, d);
-            const isToday = (curr.toDateString() === today.toDateString());
+            const isToday = (curr.toDateString() === today.toDateString() && cycleOffsetMonths === 0);
             html += `<td class="${isToday ? 'current-day' : ''}">${d}</td>`;
             if(curr.getDay() === 6) html += '</tr><tr>';
         }
@@ -393,26 +398,44 @@
     }
 
     function initSidebar() {
-        const now = new Date();
-        renderCalendar(now, 'cal-current-body', 'cal-current-title');
-        renderCalendar(new Date(now.getFullYear(), now.getMonth()+1, 1), 'cal-next-body', 'cal-next-title');
+        const baseDate = new Date();
+        baseDate.setMonth(baseDate.getMonth() + cycleOffsetMonths);
+        
+        renderCalendar(baseDate, 'cal-current-body', 'cal-current-title');
+        
+        const nextMonth = new Date(baseDate);
+        nextMonth.setMonth(baseDate.getMonth() + 1);
+        renderCalendar(nextMonth, 'cal-next-body', 'cal-next-title');
     }
 
     // --- منطق الدورة والأسابيع ---
 
+    // دوال التنقل الجديدة
+    async function changeCycle(offset) {
+        cycleOffsetMonths += offset;
+        await initializeWeeksAndFetchData();
+    }
+
+    async function resetCycle() {
+        cycleOffsetMonths = 0;
+        await initializeWeeksAndFetchData();
+    }
+
     function getCycleDates() {
-        const today = new Date();
+        const targetDate = new Date();
+        targetDate.setMonth(targetDate.getMonth() + cycleOffsetMonths);
+
         let start, end;
-        if (today.getDate() <= 25) {
-            start = new Date(today.getFullYear(), today.getMonth() - 1, 26);
-            end = new Date(today.getFullYear(), today.getMonth(), 25);
+        if (targetDate.getDate() <= 25) {
+            start = new Date(targetDate.getFullYear(), targetDate.getMonth() - 1, 26);
+            end = new Date(targetDate.getFullYear(), targetDate.getMonth(), 25);
         } else {
-            start = new Date(today.getFullYear(), today.getMonth(), 26);
-            end = new Date(today.getFullYear(), today.getMonth() + 1, 25);
+            start = new Date(targetDate.getFullYear(), targetDate.getMonth(), 26);
+            end = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 25);
         }
         start.setHours(0,0,0,0); end.setHours(23,59,59,999);
         
-        const formatter = new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long' });
+        const formatter = new Intl.DateTimeFormat('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' });
         return { start, end, label: `${formatter.format(start)} إلى ${formatter.format(end)}` };
     }
 
@@ -524,6 +547,12 @@
     }
 
     function jumpToTomorrow() {
+        // عدم القفز للغد إذا كنا نعرض دورة سابقة أو قادمة
+        if (cycleOffsetMonths !== 0) {
+            if(cycleWeeks.length > 0) showWeek(cycleWeeks[0]);
+            return;
+        }
+
         const today = new Date();
         const tomorrow = new Date(today);
         tomorrow.setDate(today.getDate() + 1);
@@ -547,7 +576,7 @@
         currentCycleInfo = getCycleDates();
         
         document.getElementById('cycle-display-area').innerHTML = 
-            `<strong>الدورة الحالية:</strong> ${currentCycleInfo.label}`;
+            `<strong>الدورة:</strong> ${currentCycleInfo.label}`;
             
         buildWeeks(currentCycleInfo.start, currentCycleInfo.end);
         renderWeeksButtons();
@@ -580,7 +609,7 @@
         const info = cycleDaysCache[key];
         const container = document.getElementById('day-detail-area');
         
-        if(!info) { container.innerHTML = '<p>تاريخ خارج الدورة الحالية</p>'; return; }
+        if(!info) { container.innerHTML = '<p>تاريخ خارج الدورة المحددة</p>'; return; }
 
         let html = `
             <div style="background:white; border-radius:8px; padding:15px; box-shadow:0 2px 4px rgba(0,0,0,0.05);">
