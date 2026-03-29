@@ -103,7 +103,6 @@
         }
         .status-present { background-color: var(--success); }
         .status-absent { background-color: #6c757d; }
-        /* الكلاس الجديد للحضور التلقائي باللون الأحمر */
         .status-auto { background-color: var(--danger); }
 
         .action-bar {
@@ -138,6 +137,14 @@
                 <option value="all">الكل</option>
                 <option value="auto_only">الحضور التلقائي فقط (أحمر) 🤖</option>
                 <option value="manual_only">التسجيل اليدوي فقط ✍️</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>يوم الأسبوع:</label>
+            <select id="filter-day" onchange="applyFilters()">
+                <option value="all">الكل</option>
+                <option value="5">الجمعة فقط</option>
+                <option value="6">السبت فقط</option>
             </select>
         </div>
         <div class="filter-group">
@@ -246,6 +253,7 @@
         const cycleFilter = document.getElementById('filter-cycle').value;
         const statusFilter = document.getElementById('filter-status').value;
         const typeFilter = document.getElementById('filter-type').value;
+        const dayFilter = document.getElementById('filter-day').value;
         const dateFrom = document.getElementById('date-from').value;
         const dateTo = document.getElementById('date-to').value;
 
@@ -256,6 +264,12 @@
             const isAuto = record.status && record.status.includes('تلقائي');
             if (typeFilter === 'auto_only' && !isAuto) return false;
             if (typeFilter === 'manual_only' && isAuto) return false;
+
+            // فلتر يوم الأسبوع (5=جمعة، 6=سبت)
+            if (dayFilter !== 'all') {
+                const recordDate = new Date(record.dateKey);
+                if (recordDate.getDay().toString() !== dayFilter) return false;
+            }
 
             if (searchName && (!record.volunteerName || !record.volunteerName.toLowerCase().includes(searchName))) return false;
             if (statusFilter !== 'all' && record.status !== statusFilter) return false;
@@ -285,7 +299,6 @@
         }
 
         records.forEach(record => {
-            // تحديد الكلاس بناءً على الحالة (حضور، تلقائي، أو غيره)
             let statusClass = 'status-absent';
             if (record.status === 'حضور') {
                 statusClass = 'status-present';
