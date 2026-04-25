@@ -217,14 +217,14 @@
         const now = new Date();
         now.setHours(0, 0, 0, 0);
 
-        let startDate, endDate;
-        if (now.getDate() >= 26) {
-            startDate = new Date(now.getFullYear(), now.getMonth(), 26);
-            endDate = new Date(now.getFullYear(), now.getMonth() + 1, 25);
-        } else {
-            startDate = new Date(now.getFullYear(), now.getMonth() - 1, 26);
-            endDate = new Date(now.getFullYear(), now.getMonth(), 25);
-        }
+            // --- التعديل المطلوب هنا فقط ---
+    let startDate = new Date(now);
+    startDate.setDate(now.getDate() - 30); // 30 يوم قبل اليوم
+
+    let endDate = new Date(now);
+    endDate.setDate(now.getDate() + 30); // 30 يوم بعد اليوم
+    // --- نهاية التعديل ---
+
 
         let currentDate = new Date(startDate);
         let todayElementId = null;
