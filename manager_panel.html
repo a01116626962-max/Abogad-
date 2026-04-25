@@ -650,7 +650,7 @@
     function sendWhatsapp() {
         if(!currentWhatsappData.names) return;
         const list = currentWhatsappData.names.map((n,i) => `${i+1}. ${n}`).join('\n');
-        const text = `📌 قائمة الحضور\n🗓️ ${currentWhatsappData.date}\n👥 العدد: ${currentWhatsappData.names.length}\n\n${list}`;
+        const text = `📌 قائمة الحضور\n🗓️ ${currentWhatsappData.date}\n⏰ الموعد: 3\n👥 العدد: ${currentWhatsappData.names.length}\n\n${list}`;
         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     }
 
