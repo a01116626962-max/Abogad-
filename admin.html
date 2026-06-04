@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة تحكم الدعوات</title>
+    <style>
+        body { font-family: 'Cairo', sans-serif; background: #f4f7f6; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background-color: #8b7355; color: white; }
+        .yes { color: green; font-weight: bold; }
+        .no { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>قائمة المدعوين والرسائل</h2>
+        <table id="guestsTable">
+            <thead>
+                <tr>
+                    <th>الاسم</th>
+                    <th>الهاتف</th>
+                    <th>الحالة</th>
+                    <th>الرسالة</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- البيانات ستظهر هنا -->
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+            projectId: "rdtt-15cbe",
+            // ... باقي إعداداتك
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        async function loadGuests() {
+            const querySnapshot = await getDocs(collection(db, "guests"));
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const row = `<tr>
+                    <td>${data.name}</td>
+                    <td>${data.phone}</td>
+                    <td class="${data.attendance === 'Yes' ? 'yes' : 'no'}">${data.attendance === 'Yes' ? 'سيحضر' : 'لن يحضر'}</td>
+                    <td>${data.message || '-'}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        loadGuests();
+    </script>
+</body>
+</html>
