@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تأكيد الحضور - محمد و A</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=Amiri&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #fdfbf7; padding: 20px; text-align: center; }
+        .form-container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        input, textarea { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        button { background-color: #8b7355; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; cursor: pointer; font-size: 1.1rem; }
+        .radio-group { display: flex; justify-content: space-around; margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+<div class="form-container">
+    <h2>تأكيد الحضور</h2>
+    <p>يسعدنا مشاركتكم فرحتنا 💌</p>
+    <form id="rsvpForm">
+        <input type="text" id="name" placeholder="اسمك الكريم" required>
+        <input type="tel" id="phone" placeholder="رقم الهاتف" required>
+        
+        <div class="radio-group">
+            <label><input type="radio" name="attendance" value="Yes" checked> سأحضر</label>
+            <label><input type="radio" name="attendance" value="No"> لن أحضر</label>
+        </div>
+        
+        <textarea id="message" placeholder="اكتب رسالة للعروسين..." rows="4"></textarea>
+        <button type="submit" id="submitBtn">إرسال البيانات</button>
+    </form>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+        authDomain: "rdtt-15cbe.firebaseapp.com",
+        projectId: "rdtt-15cbe",
+        storageBucket: "rdtt-15cbe.firebasestorage.app",
+        messagingSenderId: "219502671343",
+        appId: "1:219502671343:web:d3de4af6af0524e130321a"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    document.getElementById('rsvpForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "جاري الإرسال...";
+        
+        try {
+            await addDoc(collection(db, "guests"), {
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                attendance: document.querySelector('input[name="attendance"]:checked').value,
+                message: document.getElementById('message').value,
+                timestamp: new Date()
+            });
+            alert("تم تسجيل حضورك بنجاح! شكراً لك.");
+            window.location.reload();
+        } catch (error) {
+            alert("حدث خطأ، حاول مرة أخرى.");
+        }
+        btn.innerText = "إرسال البيانات";
+    });
+</script>
+</body>
+</html>
