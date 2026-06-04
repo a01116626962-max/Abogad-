@@ -35,7 +35,7 @@
 </div>
 
 <script>
-    // استخدمنا نفس الإعدادات الموجودة في الموقع الثاني الذي يعمل (تم توحيد appId)
+    // إعدادات فايربيز الصحيحة
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -45,7 +45,6 @@
         appId: "1:219502671343:web:b289b11869e25c9a30321a" 
     };
 
-    // تهيئة Firebase
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
@@ -57,17 +56,16 @@
         btn.innerText = "جاري الإرسال...";
         
         try {
-            // التعديل هنا: التسجيل في مجموعة user_attendance لاختبار الصلاحيات
-            await db.collection("user_attendance").add({
+            // 🟢 التغيير هنا: البيانات هتتسجل في مكان خاص بالفرح اسمه wedding_guests
+            await db.collection("wedding_guests").add({
                 name: document.getElementById('name').value,
                 phone: document.getElementById('phone').value,
                 attendance: document.querySelector('input[name="attendance"]:checked').value,
                 message: document.getElementById('message').value,
-                type: "دعوة زفاف", // أضفنا هذا الحقل لتستطيع تمييزهم في الداتابيز
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
             
-            alert("تم تسجيل حضورك بنجاح! شكراً لك.");
+            alert("تم إرسال رسالتك وتأكيد حضورك بنجاح! شكراً لك 💌");
             document.getElementById('rsvpForm').reset();
         } catch (error) {
             console.error("خطأ:", error);
