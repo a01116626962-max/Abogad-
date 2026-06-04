@@ -35,14 +35,14 @@
 </div>
 
 <script>
-    // إعدادات Firebase
+    // استخدمنا نفس الإعدادات الموجودة في الموقع الثاني الذي يعمل (تم توحيد appId)
     const firebaseConfig = {
-        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+        apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
         authDomain: "rdtt-15cbe.firebaseapp.com",
         projectId: "rdtt-15cbe",
         storageBucket: "rdtt-15cbe.firebasestorage.app",
         messagingSenderId: "219502671343",
-        appId: "1:219502671343:web:d3de4af6af0524e130321a"
+        appId: "1:219502671343:web:b289b11869e25c9a30321a" 
     };
 
     // تهيئة Firebase
@@ -57,12 +57,13 @@
         btn.innerText = "جاري الإرسال...";
         
         try {
-            // التسجيل في مجموعة مستقلة باسم wedding_guests
-            await db.collection("wedding_guests").add({
+            // التعديل هنا: التسجيل في مجموعة user_attendance لاختبار الصلاحيات
+            await db.collection("user_attendance").add({
                 name: document.getElementById('name').value,
                 phone: document.getElementById('phone').value,
                 attendance: document.querySelector('input[name="attendance"]:checked').value,
                 message: document.getElementById('message').value,
+                type: "دعوة زفاف", // أضفنا هذا الحقل لتستطيع تمييزهم في الداتابيز
                 timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
             
