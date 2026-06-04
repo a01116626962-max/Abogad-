@@ -27,8 +27,7 @@
                 </tr>
             </thead>
             <tbody id="tableBody">
-                <!-- البيانات ستظهر هنا -->
-            </tbody>
+                </tbody>
         </table>
     </div>
 
@@ -36,30 +35,46 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+        // 1. الإعدادات الكاملة لضمان الاتصال
         const firebaseConfig = {
-            apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
+            apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs", 
+            authDomain: "rdtt-15cbe.firebaseapp.com",
             projectId: "rdtt-15cbe",
-            // ... باقي إعداداتك
+            storageBucket: "rdtt-15cbe.firebasestorage.app",
+            messagingSenderId: "219502671343",
+            appId: "1:219502671343:web:b289b11869e25c9a30321a"
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
         async function loadGuests() {
-            const querySnapshot = await getDocs(collection(db, "guests"));
-            const tbody = document.getElementById('tableBody');
-            tbody.innerHTML = "";
+            try {
+                // 2. تصحيح اسم المجموعة ليطابق مكان حفظ البيانات (wedding_guests)
+                const querySnapshot = await getDocs(collection(db, "wedding_guests"));
+                const tbody = document.getElementById('tableBody');
+                tbody.innerHTML = "";
 
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                const row = `<tr>
-                    <td>${data.name}</td>
-                    <td>${data.phone}</td>
-                    <td class="${data.attendance === 'Yes' ? 'yes' : 'no'}">${data.attendance === 'Yes' ? 'سيحضر' : 'لن يحضر'}</td>
-                    <td>${data.message || '-'}</td>
-                </tr>`;
-                tbody.innerHTML += row;
-            });
+                // التحقق إذا كانت المجموعة فارغة
+                if (querySnapshot.empty) {
+                    tbody.innerHTML = "<tr><td colspan='4'>لم يقم أحد بتأكيد الحضور حتى الآن.</td></tr>";
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    const row = `<tr>
+                        <td>${data.name || '-'}</td>
+                        <td>${data.phone || '-'}</td>
+                        <td class="${data.attendance === 'Yes' ? 'yes' : 'no'}">${data.attendance === 'Yes' ? 'سيحضر' : 'لن يحضر'}</td>
+                        <td>${data.message || '-'}</td>
+                    </tr>`;
+                    tbody.innerHTML += row;
+                });
+            } catch (error) {
+                console.error("حدث خطأ في جلب البيانات: ", error);
+                alert("حدث خطأ أثناء جلب البيانات، راجع الـ Console لمعرفة التفاصيل.");
+            }
         }
 
         loadGuests();
