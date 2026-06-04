@@ -12,6 +12,8 @@
         button { background-color: #8b7355; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; cursor: pointer; font-size: 1.1rem; }
         .radio-group { display: flex; justify-content: space-around; margin: 15px 0; }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 </head>
 <body>
 
@@ -32,10 +34,8 @@
     </form>
 </div>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
+<script>
+    // إعدادات Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyCDJANXMfd6TR7R2ruLIi-xytlrB-LiCEs",
         authDomain: "rdtt-15cbe.firebaseapp.com",
@@ -45,8 +45,11 @@
         appId: "1:219502671343:web:d3de4af6af0524e130321a"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // تهيئة Firebase
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
 
     document.getElementById('rsvpForm').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -54,17 +57,20 @@
         btn.innerText = "جاري الإرسال...";
         
         try {
-            await addDoc(collection(db, "guests"), {
+            // التسجيل في مجموعة مستقلة باسم wedding_guests
+            await db.collection("wedding_guests").add({
                 name: document.getElementById('name').value,
                 phone: document.getElementById('phone').value,
                 attendance: document.querySelector('input[name="attendance"]:checked').value,
                 message: document.getElementById('message').value,
-                timestamp: new Date()
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
             });
+            
             alert("تم تسجيل حضورك بنجاح! شكراً لك.");
-            window.location.reload();
+            document.getElementById('rsvpForm').reset();
         } catch (error) {
-            alert("حدث خطأ، حاول مرة أخرى.");
+            console.error("خطأ:", error);
+            alert("حدث خطأ، يرجى المحاولة لاحقاً.");
         }
         btn.innerText = "إرسال البيانات";
     });
