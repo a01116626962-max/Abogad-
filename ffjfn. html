@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار الكاميرا والباركود</title>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h2 { color: #334155; }
+        #reader {
+            width: 100%;
+            margin-top: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            display: none; /* مخفي في البداية */
+        }
+        button {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 15px;
+        }
+        button:hover { background-color: #1d4ed8; }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e2e8f0;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #0f172a;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>معمل اختبار الباركود 🔬</h2>
+        <p>اضغط على الزر لفتح الكاميرا</p>
+        
+        <button id="cameraBtn">📷 تشغيل الكاميرا</button>
+        <div id="reader"></div>
+        
+        <div id="result">نتيجة الفحص ستظهر هنا...</div>
+    </div>
+
+    <script>
+        const cameraBtn = document.getElementById('cameraBtn');
+        const readerDiv = document.getElementById('reader');
+        const resultDiv = document.getElementById('result');
+        let html5QrCode;
+        let isCameraOpen = false;
+
+        cameraBtn.addEventListener('click', () => {
+            if (isCameraOpen) {
+                // إغلاق الكاميرا
+                html5QrCode.stop().then(() => {
+                    readerDiv.style.display = 'none';
+                    isCameraOpen = false;
+                    cameraBtn.innerText = '📷 تشغيل الكاميرا';
+                }).catch(err => console.error("Error stopping camera", err));
+            } else {
+                // فتح الكاميرا
+                readerDiv.style.display = 'block';
+                html5QrCode = new Html5Qrcode("reader");
+                
+                html5QrCode.start(
+                    { facingMode: "environment" }, // الكاميرا الخلفية
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 100 }
+                    },
+                    (decodedText) => {
+                        // عند النجاح
+                        resultDiv.innerText = "✅ الباركود: " + decodedText;
+                        resultDiv.style.backgroundColor = "#d1fae5"; // لون أخضر فاتح
+                        resultDiv.style.color = "#065f46";
+                        
+                        // إغلاق الكاميرا بعد القراءة
+                        html5QrCode.stop().then(() => {
+                            readerDiv.style.display = 'none';
+                            isCameraOpen = false;
+                            cameraBtn.innerText = '📷 تشغيل الكاميرا';
+                        });
+                    },
+                    (errorMessage) => {
+                        // أخطاء صامتة أثناء البحث
+                    }
+                ).then(() => {
+                    isCameraOpen = true;
+                    cameraBtn.innerText = '❌ إغلاق الكاميرا';
+                }).catch((err) => {
+                    console.error("Camera Error:", err);
+                    resultDiv.innerText = "❌ حدث خطأ: يرجى السماح باستخدام الكاميرا أو فتح الموقع من سيرفر محمي (HTTPS).";
+                    resultDiv.style.backgroundColor = "#fee2e2";
+                    resultDiv.style.color = "#991b1b";
+                    readerDiv.style.display = 'none';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
